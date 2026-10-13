@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 
 local remotes = Instance.new("Folder")
 remotes.Name = "GameRemotes"
@@ -27,44 +28,6 @@ enemies.Parent = world
 local profiles = {}
 local cooldowns = {}
 local random = Random.new()
-
-local function makePart(parent, name, size, position, color, material)
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = size
-	part.Position = position
-	part.Anchored = true
-	part.Color = color
-	part.Material = material or Enum.Material.SmoothPlastic
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Parent = parent
-	return part
-end
-
-local function buildWorld()
-	makePart(world, "Home Island", Vector3.new(110, 4, 110), Vector3.new(0, -2, 0), Color3.fromRGB(55, 104, 93), Enum.Material.Grass)
-	makePart(world, "Region Path", Vector3.new(24, 2, 180), Vector3.new(0, -1, 140), Color3.fromRGB(104, 91, 72), Enum.Material.Ground)
-	makePart(world, "Wilds", Vector3.new(150, 4, 170), Vector3.new(0, -2, 270), Color3.fromRGB(69, 111, 76), Enum.Material.Grass)
-	makePart(world, "Base Beacon", Vector3.new(8, 16, 8), Vector3.new(0, 8, -34), Color3.fromRGB(74, 207, 255), Enum.Material.Neon)
-	makePart(world, "Gate Left", Vector3.new(3, 20, 3), Vector3.new(-12, 10, 50), Color3.fromRGB(48, 49, 75), Enum.Material.Slate)
-	makePart(world, "Gate Right", Vector3.new(3, 20, 3), Vector3.new(12, 10, 50), Color3.fromRGB(48, 49, 75), Enum.Material.Slate)
-	makePart(world, "Gate Top", Vector3.new(27, 3, 3), Vector3.new(0, 20, 50), Color3.fromRGB(48, 49, 75), Enum.Material.Slate)
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "Base Checkpoint"
-	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.Position = Vector3.new(0, 1, -12)
-	spawn.Anchored = true
-	spawn.Neutral = true
-	spawn.Color = Color3.fromRGB(80, 190, 255)
-	spawn.Parent = world
-	for _, x in ipairs({-55, 55}) do
-		for _, z in ipairs({95, 150, 210, 315}) do
-			local tree = makePart(world, "Wilds Crystal", Vector3.new(3, random:NextInteger(8, 16), 3), Vector3.new(x + random:NextInteger(-10, 10), 4, z), Color3.fromRGB(102, 214, 160), Enum.Material.Neon)
-			tree.Shape = Enum.PartType.Ball
-		end
-	end
-end
 
 local function ensureStat(player, name, initial)
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -365,12 +328,12 @@ local function onPlayer(player)
 	end)
 end
 
-buildWorld()
+WorldBuilder.build(world, Config)
 Players.PlayerAdded:Connect(onPlayer)
 Players.PlayerRemoving:Connect(function(player) profiles[player] = nil end)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
 
-for _, position in ipairs({Vector3.new(-24, 5, 100), Vector3.new(20, 5, 125), Vector3.new(-35, 5, 175), Vector3.new(30, 5, 205), Vector3.new(-15, 5, 255), Vector3.new(22, 5, 305)}) do
+for _, position in ipairs(WorldBuilder.EnemySpawns) do
 	spawnEnemy(position, "Wildling")
 end
 

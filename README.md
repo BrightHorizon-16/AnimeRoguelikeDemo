@@ -16,7 +16,8 @@ This is a small playable systems demo for the concept we discussed. It uses simp
 
 - `default.project.json` — Rojo project mapping
 - `src/shared/Config.lua` — recruit and economy settings plus original character catalog
-- `src/server/Main.server.lua` — generated map, enemies, combat validation, base economy, roster, and knockout lock
+- `src/server/Main.server.lua` — enemies, combat validation, base economy, roster, and knockout lock
+- `src/server/WorldBuilder.lua` — generates the map at runtime: floors, walled base, gate, path rails, wilds decoration, and a floor self-check
 - `src/client/Main.client.lua` — HUD, roster controls, keyboard/mouse controls, and touch-friendly action buttons
 
 ## Open in Roblox Studio
@@ -26,6 +27,10 @@ The project is mapped for Rojo. Install both the Rojo CLI and the Rojo Studio pl
 After connecting, the Explorer should contain `ReplicatedStorage > Shared > Config`, `ServerScriptService > Main > Main`, and `StarterPlayer > StarterPlayerScripts > Client > Main`. The 3D scene is built by the server script when the game starts, so the edit-mode viewport is empty. Press **Play** to generate the base and wilds; use **Test → Start** with multiple players to try co-op. If the scene is still empty during Play, open **View → Output** and check for a red script error.
 
 Controls: click for basic attack, right-click for heavy attack, Shift to dash, C for the movement leap, Q/E for the first two learned abilities, R for ultimate, and B to open the base roster. The on-screen action bar also works with touch input.
+
+## Base layout
+
+The home island is a walled compound. From the checkpoint plaza (center): the Guild Hall with the roster desk is at the back, five character stations (Kairo, Vexa, Mori, Nyx, Aru) line the east promenade, the Recruitment Shrine and Absorption Altar are on the west side, and the Expedition Gate leads out to the path and wilds. The roster panel (B) works anywhere; the buildings are labelled to show where each action belongs. Invisible rails keep players on the path and inside the wilds. When the map is built, the Output window prints a floor check result.
 
 ## Demo limits
 
