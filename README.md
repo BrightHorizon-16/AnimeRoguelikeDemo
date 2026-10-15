@@ -1,8 +1,8 @@
 # Generated Beings — shared base demo
 
-The prototype now has one large shared starter base, a faster looping conveyor with rounded corners and thin crosswise treads over a dark belt, and a bright studded field inspired by the provided reference. The belt moves the player as they stand on it. The base frame is intentionally open so later upgrades can add walls and rooms.
+The prototype now has one large shared starter base, a looping conveyor with rounded corners and thin crosswise treads over a dark belt, and a bright studded field inspired by the provided reference. The belt carries idle players around the loop at 24 studs/second. The base frame is intentionally open so later upgrades can add walls and rooms.
 
-The first playable UI includes a left-side shop, a backpack button at top-left, a scrollable inventory with live item counts, a nine-slot hotbar, a top-right coin display, and a 12-item text-only spin funded by test coins. Hold Shift to sprint. A discreet text control hint stays in the bottom-left. Players start with 500 coins and receive 10 more every 8 seconds. Shop and spin items have no gameplay effects yet.
+The first playable UI includes a left-side shop, a backpack button at top-left, a scrollable inventory with live item counts, a smaller nine-slot hotbar, and a top-right coin display. A wide, thin white Spin button sits above the hotbar. Hold Shift to sprint. A discreet text control hint stays in the bottom-left. Players start with 500 coins and receive 10 more every 8 seconds. Shop and spin items have no gameplay effects yet.
 
 ## Play in Roblox Studio
 

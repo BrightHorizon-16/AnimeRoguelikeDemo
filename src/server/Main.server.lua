@@ -129,7 +129,7 @@ local arcLength = math.pi * cornerRadius / 2
 local perimeter = (straightX + straightZ) * 2 + arcLength * 4
 local beltCount = 144
 local beltSpacing = perimeter / beltCount
-local beltSpeed = 12
+local beltSpeed = 24
 
 local function pointOnLoop(distance)
 	distance %= perimeter
@@ -179,6 +179,7 @@ for index = 1, beltCount do
 end
 conveyor:SetAttribute("TreadCount", beltCount)
 conveyor:SetAttribute("ConveyorEpoch", workspace:GetServerTimeNow())
+conveyor:SetAttribute("BeltSpeed", beltSpeed)
 
 -- The red approach path joins the conveyor loop and the shared spawn.
 part(map, "Red Approach Walkway", Vector3.new(12, 0.35, 48), Vector3.new(0, 0.2, 57), Color3.fromRGB(232, 91, 91), Enum.Material.SmoothPlastic)

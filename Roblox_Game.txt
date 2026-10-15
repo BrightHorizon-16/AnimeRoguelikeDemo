@@ -3,7 +3,7 @@ GENERATED BEINGS — ROBLOX PROJECT HANDOFF
 
 Project folder: C:\Games\AnimeRoguelikeDemo
 Rojo project: default.project.json
-Status date: 2026-10-15
+Status date: 2026-10-16
 
 CURRENT STATE
 -------------
@@ -19,10 +19,11 @@ coins and get 10 more every 8 seconds. Hold Left Shift or Right Shift to
 sprint (16 normal / 24 sprint speed). A controls guide stays at bottom-left.
 
 The conveyor has a dark belt, rounded corners, and 144 thin animated crosswise
-treads. It travels at 12 studs/second (twice the earlier speed) and carries the
-player around its loop. The GUI follows a compact Roblox-style layout: backpack
-button at top-left, Shop and Spin at left, coin icon and total at top-right,
-nine-slot hotbar at bottom, and discreet text-only controls in the bottom-left.
+treads. It travels at 24 studs/second and moves idle players around its loop
+each frame. The GUI follows a compact Roblox-style layout: backpack button at
+top-left, Shop at left, a wide thin white Spin button above the smaller
+nine-slot hotbar, coin icon and total near the top-right corner, and discreet
+text-only controls in the bottom-left.
 Items are still placeholders and have no gameplay effect.
 
 RUNNING IN ROBLOX STUDIO

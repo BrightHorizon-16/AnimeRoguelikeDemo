@@ -2,6 +2,19 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-16 - Conveyor carry and HUD spacing
+
+Changed
+- Fixed conveyor carry by translating the character with each frame of belt travel, so idle players move instead of running in place.
+- Increased conveyor speed from 12 to 24 studs/second.
+- Reduced the nine-slot hotbar to 46-pixel squares and placed a wider, thinner white Spin button above it. The button says only "SPIN" and uses black text.
+- Raised the background-free coin icon and total closer to the top-right corner and kept them visually adjacent.
+
+Verification
+- Reviewed the source diff and whitespace. Not run in Roblox Studio; confirm belt movement and HUD spacing in Play mode.
+
+Signed: Codex
+
 ## 2026-10-15 - Compact HUD and smoother faster conveyor
 
 Changed

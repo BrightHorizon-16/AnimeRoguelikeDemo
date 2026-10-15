@@ -95,7 +95,7 @@ local wallet = Instance.new("Frame")
 wallet.Name = "Wallet"
 wallet.Size = UDim2.fromOffset(170, 42)
 wallet.AnchorPoint = Vector2.new(1, 0)
-wallet.Position = UDim2.new(1, -20, 0, 20)
+wallet.Position = UDim2.new(1, -12, 0, 6)
 wallet.BackgroundTransparency = 1
 wallet.BorderSizePixel = 0
 wallet.Parent = gui
@@ -113,7 +113,7 @@ coinGlyph.TextXAlignment = Enum.TextXAlignment.Center
 local coinText = text(wallet, "Coins", "500", UDim2.new(1, -38, 1, 0), UDim2.fromOffset(38, 0), 22, Color3.fromRGB(111, 255, 87), Enum.Font.GothamBlack)
 coinText.TextStrokeColor3 = Color3.fromRGB(14, 35, 8)
 coinText.TextStrokeTransparency = 0.1
-coinText.TextXAlignment = Enum.TextXAlignment.Right
+coinText.TextXAlignment = Enum.TextXAlignment.Left
 
 local inventoryToggle = button(gui, "InventoryToggle", "", UDim2.fromOffset(50, 50), UDim2.new(0, 18, 0, 18), COLORS.panel2)
 corner(inventoryToggle, 14)
@@ -140,7 +140,10 @@ backpackPocket.Parent = inventoryToggle
 corner(backpackPocket, 3)
 
 local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(112, 46), UDim2.new(0, 18, 0, 82), Color3.fromRGB(59, 155, 62))
-local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(112, 46), UDim2.new(0, 18, 0, 136), Color3.fromRGB(129, 81, 42))
+local spinToggle = button(gui, "SpinToggle", "SPIN", UDim2.fromOffset(210, 32), UDim2.new(0.5, 0, 1, -68), Color3.fromRGB(255, 255, 255))
+spinToggle.AnchorPoint = Vector2.new(0.5, 1)
+spinToggle.TextColor3 = Color3.fromRGB(20, 20, 20)
+spinToggle.TextStrokeTransparency = 1
 
 local status = Instance.new("TextLabel")
 status.Name = "Status"
@@ -279,9 +282,9 @@ inventoryLayout.Parent = inventoryList
 
 local hotbar = Instance.new("Frame")
 hotbar.Name = "Hotbar"
-hotbar.Size = UDim2.fromOffset(562, 58)
+hotbar.Size = UDim2.fromOffset(454, 46)
 hotbar.AnchorPoint = Vector2.new(0.5, 1)
-hotbar.Position = UDim2.new(0.5, 0, 1, -16)
+hotbar.Position = UDim2.new(0.5, 0, 1, -12)
 hotbar.BackgroundTransparency = 1
 hotbar.Parent = gui
 local hotbarNames = table.create(9)
@@ -297,7 +300,7 @@ local function redrawHotbar()
 end
 
 for index = 1, 9 do
-	local slot = button(hotbar, "HotbarSlot" .. index, tostring(index), UDim2.fromOffset(58, 58), UDim2.fromOffset((index - 1) * 63, 0), COLORS.panel2)
+	local slot = button(hotbar, "HotbarSlot" .. index, tostring(index), UDim2.fromOffset(46, 46), UDim2.fromOffset((index - 1) * 51, 0), COLORS.panel2)
 	slot.BackgroundTransparency = 0.18
 	slot.TextSize = 10
 	slot.TextWrapped = true
@@ -493,7 +496,7 @@ local function connectWallet()
 	local stats = player:WaitForChild("leaderstats", 15)
 	local coins = stats and stats:WaitForChild("Coins", 15)
 	if coins then
-		local function update() coinText.Text = "Coins: " .. tostring(coins.Value) end
+		local function update() coinText.Text = tostring(coins.Value) end
 		update()
 		coins:GetPropertyChangedSignal("Value"):Connect(update)
 	end
@@ -539,7 +542,7 @@ local straightX = (halfX - cornerRadius) * 2
 local straightZ = (halfZ - cornerRadius) * 2
 local arcLength = math.pi * cornerRadius / 2
 local perimeter = (straightX + straightZ) * 2 + arcLength * 4
-local beltSpeed = 12
+local beltSpeed = conveyor:GetAttribute("BeltSpeed") or 24
 local beltCount = conveyor:GetAttribute("TreadCount")
 while not beltCount do
 	task.wait()
@@ -624,7 +627,7 @@ local function tangentAt(x, z)
 	return Vector3.new(0, 0, -1)
 end
 
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(deltaTime)
 	local elapsed = workspace:GetServerTimeNow() - conveyorEpoch
 	for index, tread in ipairs(treads) do
 		if tread.Parent then
@@ -642,7 +645,9 @@ RunService.Heartbeat:Connect(function()
 	if not hit or hit.Instance.Name ~= "Conveyor Surface" then return end
 
 	local direction = tangentAt(root.Position.X, root.Position.Z)
-	local walking = humanoid.MoveDirection * humanoid.WalkSpeed
-	local currentY = root.AssemblyLinearVelocity.Y
-	root.AssemblyLinearVelocity = Vector3.new(walking.X + direction.X * beltSpeed, currentY, walking.Z + direction.Z * beltSpeed)
+	-- Translate the character a small step with each tread update. Setting only
+	-- velocity gets cancelled by Roblox's idle humanoid controller, making the
+	-- character run in place instead of being carried with the belt.
+	local carryStep = direction * beltSpeed * deltaTime
+	root.CFrame = root.CFrame + carryStep
 end)
