@@ -24,6 +24,9 @@ remotes.Parent = ReplicatedStorage
 local gameAction = Instance.new("RemoteEvent")
 gameAction.Name = "GameAction"
 gameAction.Parent = remotes
+local inventoryChanged = Instance.new("RemoteEvent")
+inventoryChanged.Name = "InventoryChanged"
+inventoryChanged.Parent = remotes
 local shopSpin = Instance.new("RemoteFunction")
 shopSpin.Name = "ShopSpin"
 shopSpin.Parent = remotes
@@ -69,7 +72,7 @@ end
 -- Bright green studded field inspired by the reference image.
 local grass = Color3.fromRGB(77, 205, 91)
 for x = -7, 6 do
-for z = -6, 5 do
+	for z = -6, 5 do
 		part(map, "Grass Tile", Vector3.new(16, 2, 16), Vector3.new(x * 16 + 8, -1, z * 16 + 8), grass, Enum.Material.Plastic, Enum.SurfaceType.Studs)
 	end
 end
@@ -108,6 +111,18 @@ part(conveyor, "Outer Rail South Right", Vector3.new(38, 1.5, 1), Vector3.new(26
 part(conveyor, "Outer Rail West", Vector3.new(1, 1.5, 70), Vector3.new(-45, 1.0, 0), rail, steel)
 part(conveyor, "Outer Rail East", Vector3.new(1, 1.5, 70), Vector3.new(45, 1.0, 0), rail, steel)
 
+-- Continuous collision decking sits below the moving visual tread tiles.
+for _, spec in ipairs({
+	{ Vector3.new(84, 0.5, 4.5), Vector3.new(0, 0, -32) },
+	{ Vector3.new(4.5, 0.5, 64), Vector3.new(42, 0, 0) },
+	{ Vector3.new(84, 0.5, 4.5), Vector3.new(0, 0, 32) },
+	{ Vector3.new(4.5, 0.5, 64), Vector3.new(-42, 0, 0) },
+}) do
+	local deck = part(conveyor, "Conveyor Surface", spec[1], spec[2], rail, steel)
+	deck.Transparency = 1
+	deck.CanTouch = false
+end
+
 local halfX, halfZ = 42, 32
 local perimeter = 2 * ((halfX * 2) + (halfZ * 2))
 local beltCount = 30
@@ -143,11 +158,12 @@ for index = 1, beltCount do
 	segment:SetAttribute("TrackAxis", axis)
 	segment:SetAttribute("TrackDirection", direction)
 	segment.CanCollide = false
+	segment.CanQuery = false
 	table.insert(beltSegments, segment)
 end
 
 -- The red approach path joins the conveyor loop and the shared spawn.
-part(map, "Red Approach Walkway", Vector3.new(12, 0.35, 44), Vector3.new(0, 0.2, 57), Color3.fromRGB(232, 91, 91), Enum.Material.SmoothPlastic)
+part(map, "Red Approach Walkway", Vector3.new(12, 0.35, 48), Vector3.new(0, 0.2, 57), Color3.fromRGB(232, 91, 91), Enum.Material.SmoothPlastic)
 part(map, "Spawn Plaza", Vector3.new(24, 0.5, 18), Vector3.new(0, 0.25, 82), Color3.fromRGB(235, 232, 218), Enum.Material.Concrete)
 local spawn = Instance.new("SpawnLocation")
 spawn.Name = "Shared Spawn"
@@ -174,6 +190,12 @@ local stock = {
 	{ Name = "Wood Bundle", Price = 100 },
 	{ Name = "Gem Pouch", Price = 250 },
 	{ Name = "Pet Egg", Price = 300 },
+	{ Name = "Gravity Coil", Price = 220 },
+	{ Name = "Magic Carpet", Price = 350 },
+	{ Name = "Iron Sword", Price = 125 },
+	{ Name = "Magic Wand", Price = 200 },
+	{ Name = "Rainbow Trail", Price = 275 },
+	{ Name = "Mystery Box", Price = 400 },
 }
 local prizePool = {
 	"Health Potion", "Speed Coil", "Lucky Charm", "Wood Bundle", "Gem Pouch", "Pet Egg",
@@ -201,6 +223,8 @@ local function addInventoryItem(player, itemName)
 		count.Parent = inventory
 	end
 	count.Value += 1
+	inventoryChanged:FireClient(player)
+	return count.Value
 end
 
 local function getCoins(player)
@@ -216,8 +240,8 @@ shopSpin.OnServerInvoke = function(player, action, itemName)
 			if item.Name == itemName then
 				if coins.Value < item.Price then return false, "Not enough coins." end
 				coins.Value -= item.Price
-				addInventoryItem(player, item.Name)
-				return true, "Bought " .. item.Name .. ". It is a placeholder item for now."
+				local count = addInventoryItem(player, item.Name)
+				return true, "Bought " .. item.Name .. " • owned " .. count .. ". Placeholder item for now."
 			end
 		end
 		return false, "That item is not in the shop."
@@ -229,8 +253,8 @@ shopSpin.OnServerInvoke = function(player, action, itemName)
 		if coins.Value < price then return false, "You need 50 coins to spin." end
 		coins.Value -= price
 		local prize = prizePool[random:NextInteger(1, #prizePool)]
-		addInventoryItem(player, prize)
-		return true, prize
+		local count = addInventoryItem(player, prize)
+		return true, prize, count
 	end
 	return false, "Unknown action."
 end

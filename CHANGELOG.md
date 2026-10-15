@@ -2,6 +2,20 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - Scrollable shop, inventory, controls, and player-moving conveyor
+
+Changed
+- Converted the shop list to a scrollable list and expanded stock to twelve generic entries.
+- Added an Inventory button and scrollable inventory panel that shows item names and live counts after purchases and spins.
+- Moved the control instructions into a persistent panel at the bottom-left.
+- Added a continuous invisible conveyor deck under the animated tread segments and client-side tangent movement that carries the local player around the loop, including the path crossing.
+- Updated the red approach walkway to meet the conveyor and kept a gap in the south rail for entry.
+
+Verification
+- Reviewed source and mappings. Not run in Roblox Studio; verify scrolling, inventory refresh, and conveyor movement in Play mode.
+
+Signed: Codex
+
 ## 2026-10-15 - One shared base, conveyor, shop, and spin UI
 
 Changed

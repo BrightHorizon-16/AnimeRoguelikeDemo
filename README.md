@@ -2,7 +2,7 @@
 
 The prototype now has one large shared starter base, a looping animated conveyor, and a bright studded field inspired by the provided reference. The base frame is intentionally open so later upgrades can add walls and rooms.
 
-The first playable UI includes a placeholder shop, a 12-item text-only spin funded by test coins, and hold-Shift sprint. Players start with 500 coins and receive 10 more every 8 seconds. Purchases and spin results appear in a placeholder inventory; none of the items have gameplay effects yet.
+The first playable UI includes a scrollable placeholder shop, a scrollable inventory with live item counts, a 12-item text-only spin funded by test coins, and hold-Shift sprint. A control guide stays in the bottom-left. The conveyor has a continuous track and carries players around the base. Players start with 500 coins and receive 10 more every 8 seconds. Shop and spin items have no gameplay effects yet.
 
 ## Play in Roblox Studio
 
@@ -17,6 +17,6 @@ Keep Rojo running, connect the Studio plugin to `127.0.0.1:34873`, sync, stop an
 
 ## Placeholder shop stock
 
-Health Potion, Speed Coil, Lucky Charm, Wood Bundle, Gem Pouch, and Pet Egg. The spin can award those plus Iron Sword, Magic Wand, Shield, Grapple Hook, Rainbow Trail, or Mystery Box. The server chooses the reward and records a count in the player's placeholder inventory.
+Health Potion, Speed Coil, Lucky Charm, Wood Bundle, Gem Pouch, Pet Egg, Gravity Coil, Magic Carpet, Iron Sword, Magic Wand, Rainbow Trail, and Mystery Box. The spin can also award Shield or Grapple Hook. The server chooses the reward and records a count in the player's placeholder inventory.
 
 See [PROJECT_STATUS.md](PROJECT_STATUS.md), [Roblox_Game.txt](Roblox_Game.txt), and [CHANGELOG.md](CHANGELOG.md) for current scope and author-signed history.

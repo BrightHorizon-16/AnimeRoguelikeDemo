@@ -4,11 +4,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("DemoRemotes")
 local gameAction = remotes:WaitForChild("GameAction")
 local shopSpin = remotes:WaitForChild("ShopSpin")
+local inventoryChanged = remotes:WaitForChild("InventoryChanged")
 
 local COLORS = {
 	panel = Color3.fromRGB(28, 34, 46),
@@ -87,8 +89,9 @@ outline(wallet, COLORS.green)
 text(wallet, "WalletIcon", "◈", UDim2.fromOffset(30, 50), UDim2.fromOffset(14, 2), 24, COLORS.gold, Enum.Font.GothamBold)
 local coinText = text(wallet, "Coins", "Coins: 500", UDim2.new(1, -56, 1, 0), UDim2.fromOffset(52, 0), 19, COLORS.white, Enum.Font.GothamBold)
 
-local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(128, 50), UDim2.new(1, -288, 0, 20), COLORS.blue)
-local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(142, 50), UDim2.new(1, -148, 0, 20), Color3.fromRGB(164, 107, 236))
+local inventoryToggle = button(gui, "InventoryToggle", "INVENTORY", UDim2.fromOffset(128, 50), UDim2.new(1, -430, 0, 20), COLORS.green)
+local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(128, 50), UDim2.new(1, -290, 0, 20), COLORS.blue)
+local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(132, 50), UDim2.new(1, -148, 0, 20), Color3.fromRGB(164, 107, 236))
 
 local status = Instance.new("TextLabel")
 status.Name = "Status"
@@ -101,10 +104,25 @@ status.BorderSizePixel = 0
 status.TextColor3 = COLORS.white
 status.TextSize = 17
 status.Font = Enum.Font.GothamMedium
-status.Text = "One shared base • Hold SHIFT to sprint"
+status.Text = "Welcome to your base."
 status.Parent = gui
 corner(status, 10)
 outline(status, Color3.fromRGB(116, 135, 163), 1)
+
+local controls = Instance.new("Frame")
+controls.Name = "ControlsInstructions"
+controls.Size = UDim2.fromOffset(275, 76)
+controls.AnchorPoint = Vector2.new(0, 1)
+controls.Position = UDim2.new(0, 18, 1, -18)
+controls.BackgroundColor3 = COLORS.panel
+controls.BackgroundTransparency = 0.08
+controls.BorderSizePixel = 0
+controls.Parent = gui
+corner(controls, 10)
+outline(controls, Color3.fromRGB(116, 135, 163), 1)
+text(controls, "Heading", "CONTROLS", UDim2.new(1, -20, 0, 24), UDim2.fromOffset(12, 6), 14, COLORS.gold, Enum.Font.GothamBold)
+text(controls, "Movement", "WASD  Move     SHIFT  Sprint", UDim2.new(1, -20, 0, 22), UDim2.fromOffset(12, 29), 13, COLORS.white)
+text(controls, "Actions", "Use the top buttons for Shop, Spin, Inventory", UDim2.new(1, -20, 0, 20), UDim2.fromOffset(12, 51), 10, COLORS.muted)
 
 local function makePanel(name, size)
 	local panel = Instance.new("Frame")
@@ -127,6 +145,23 @@ text(shopPanel, "Title", "BASE SHOP", UDim2.new(1, -80, 0, 44), UDim2.fromOffset
 text(shopPanel, "SubTitle", "Generic placeholder gear • paid with test coins", UDim2.new(1, -44, 0, 26), UDim2.fromOffset(22, 58), 14, COLORS.muted)
 local shopClose = button(shopPanel, "Close", "×", UDim2.fromOffset(38, 38), UDim2.new(1, -52, 0, 14), COLORS.panel2)
 
+local shopList = Instance.new("ScrollingFrame")
+shopList.Name = "ShopItems"
+shopList.Position = UDim2.fromOffset(18, 94)
+shopList.Size = UDim2.new(1, -36, 0, 354)
+shopList.BackgroundTransparency = 1
+shopList.BorderSizePixel = 0
+shopList.ScrollBarThickness = 8
+shopList.ScrollBarImageColor3 = COLORS.blue
+shopList.ScrollingDirection = Enum.ScrollingDirection.Y
+shopList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+shopList.CanvasSize = UDim2.new(0, 0, 0, 0)
+shopList.Parent = shopPanel
+local shopLayout = Instance.new("UIListLayout")
+shopLayout.Padding = UDim.new(0, 6)
+shopLayout.SortOrder = Enum.SortOrder.LayoutOrder
+shopLayout.Parent = shopList
+
 local shopItems = {
 	{ Name = "Health Potion", Price = 75, Description = "A classic healing item" },
 	{ Name = "Speed Coil", Price = 180, Description = "A familiar movement gadget" },
@@ -134,16 +169,22 @@ local shopItems = {
 	{ Name = "Wood Bundle", Price = 100, Description = "Basic building supplies" },
 	{ Name = "Gem Pouch", Price = 250, Description = "A pouch of pretend gems" },
 	{ Name = "Pet Egg", Price = 300, Description = "A mystery companion egg" },
+	{ Name = "Gravity Coil", Price = 220, Description = "A classic jump gadget" },
+	{ Name = "Magic Carpet", Price = 350, Description = "A fantasy travel item" },
+	{ Name = "Iron Sword", Price = 125, Description = "A basic adventure weapon" },
+	{ Name = "Magic Wand", Price = 200, Description = "A simple spell-caster" },
+	{ Name = "Rainbow Trail", Price = 275, Description = "A colorful character effect" },
+	{ Name = "Mystery Box", Price = 400, Description = "A surprise placeholder item" },
 }
 
 for index, item in ipairs(shopItems) do
 	local row = Instance.new("Frame")
 	row.Name = item.Name:gsub("%s", "") .. "Row"
-	row.Size = UDim2.new(1, -36, 0, 52)
-	row.Position = UDim2.fromOffset(18, 94 + (index - 1) * 58)
+	row.Size = UDim2.new(1, -10, 0, 52)
+	row.LayoutOrder = index
 	row.BackgroundColor3 = COLORS.panel2
 	row.BorderSizePixel = 0
-	row.Parent = shopPanel
+	row.Parent = shopList
 	corner(row, 8)
 	text(row, "ItemName", item.Name, UDim2.new(1, -160, 0, 24), UDim2.fromOffset(12, 4), 16, COLORS.white, Enum.Font.GothamBold)
 	text(row, "ItemDescription", item.Description, UDim2.new(1, -160, 0, 19), UDim2.fromOffset(12, 28), 12, COLORS.muted)
@@ -162,6 +203,70 @@ for index, item in ipairs(shopItems) do
 		end
 	end)
 end
+
+local inventoryPanel = makePanel("InventoryPanel", UDim2.fromOffset(500, 420))
+text(inventoryPanel, "Title", "INVENTORY", UDim2.new(1, -80, 0, 44), UDim2.fromOffset(22, 16), 25, COLORS.white, Enum.Font.GothamBold)
+text(inventoryPanel, "SubTitle", "Placeholder items you have collected", UDim2.new(1, -44, 0, 26), UDim2.fromOffset(22, 58), 14, COLORS.muted)
+local inventoryClose = button(inventoryPanel, "Close", "×", UDim2.fromOffset(38, 38), UDim2.new(1, -52, 0, 14), COLORS.panel2)
+local inventoryList = Instance.new("ScrollingFrame")
+inventoryList.Name = "InventoryItems"
+inventoryList.Position = UDim2.fromOffset(18, 94)
+inventoryList.Size = UDim2.new(1, -36, 0, 300)
+inventoryList.BackgroundTransparency = 1
+inventoryList.BorderSizePixel = 0
+inventoryList.ScrollBarThickness = 8
+inventoryList.ScrollBarImageColor3 = COLORS.green
+inventoryList.ScrollingDirection = Enum.ScrollingDirection.Y
+inventoryList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+inventoryList.CanvasSize = UDim2.new(0, 0, 0, 0)
+inventoryList.Parent = inventoryPanel
+local inventoryLayout = Instance.new("UIListLayout")
+inventoryLayout.Padding = UDim.new(0, 7)
+inventoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
+inventoryLayout.Parent = inventoryList
+
+local function refreshInventory()
+	for _, child in ipairs(inventoryList:GetChildren()) do
+		if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
+	end
+	local folder = player:FindFirstChild("PlaceholderInventory")
+	local entries = folder and folder:GetChildren() or {}
+	table.sort(entries, function(a, b) return a.Name < b.Name end)
+	if #entries == 0 then
+		local empty = text(inventoryList, "Empty", "No items yet — try the Shop or Lucky Spin.", UDim2.new(1, -10, 0, 46), UDim2.new(), 15, COLORS.muted)
+		empty.BackgroundColor3 = COLORS.panel2
+		empty.BackgroundTransparency = 0
+		empty.LayoutOrder = 1
+		corner(empty, 8)
+		return
+	end
+	for index, entry in ipairs(entries) do
+		if entry:IsA("IntValue") then
+			local row = Instance.new("Frame")
+			row.Name = "InventoryItem"
+			row.Size = UDim2.new(1, -10, 0, 48)
+			row.BackgroundColor3 = COLORS.panel2
+			row.LayoutOrder = index
+			row.BorderSizePixel = 0
+			corner(row, 8)
+			row.Parent = inventoryList
+			text(row, "Name", entry.Name, UDim2.new(1, -90, 1, 0), UDim2.fromOffset(14, 0), 16, COLORS.white, Enum.Font.GothamBold)
+			local count = text(row, "Count", "× " .. entry.Value, UDim2.fromOffset(72, 48), UDim2.new(1, -84, 0, 0), 16, COLORS.gold, Enum.Font.GothamBold)
+			count.TextXAlignment = Enum.TextXAlignment.Right
+		end
+	end
+end
+
+local inventoryFolder = player:WaitForChild("PlaceholderInventory")
+inventoryFolder.ChildAdded:Connect(function(item)
+	if item:IsA("IntValue") then
+		item:GetPropertyChangedSignal("Value"):Connect(refreshInventory)
+	end
+	refreshInventory()
+end)
+inventoryFolder.ChildRemoved:Connect(refreshInventory)
+inventoryChanged.OnClientEvent:Connect(refreshInventory)
+refreshInventory()
 
 local spinPanel = makePanel("SpinPanel", UDim2.fromOffset(590, 330))
 text(spinPanel, "Title", "LUCKY SPIN", UDim2.new(1, -80, 0, 42), UDim2.fromOffset(22, 16), 25, COLORS.white, Enum.Font.GothamBold)
@@ -244,7 +349,7 @@ spinButton.Activated:Connect(function()
 	isSpinning = true
 	spinButton.Text = "SPINNING..."
 	spinButton.Active = false
-	local ok, success, prize = pcall(function()
+	local ok, success, prize, count = pcall(function()
 		return shopSpin:InvokeServer("Spin")
 	end)
 	if not ok then
@@ -253,23 +358,25 @@ spinButton.Activated:Connect(function()
 		status.Text = prize or "Spin failed."
 	else
 		playSpin(prize)
-		status.Text = "Won " .. prize .. "! Added to your placeholder inventory."
+		status.Text = "Won " .. prize .. "! Inventory count: " .. tostring(count)
 	end
 	spinButton.Text = "SPIN  •  50 COINS"
 	spinButton.Active = true
 	isSpinning = false
 end)
 
-local function setOpen(panel, other)
+local function setOpen(panel, ...)
 	local opening = not panel.Visible
 	panel.Visible = opening
-	other.Visible = false
+	for _, other in ipairs({ ... }) do other.Visible = false end
 end
 
-shopToggle.Activated:Connect(function() setOpen(shopPanel, spinPanel) end)
-spinToggle.Activated:Connect(function() setOpen(spinPanel, shopPanel) end)
+shopToggle.Activated:Connect(function() setOpen(shopPanel, spinPanel, inventoryPanel) end)
+spinToggle.Activated:Connect(function() setOpen(spinPanel, shopPanel, inventoryPanel) end)
+inventoryToggle.Activated:Connect(function() setOpen(inventoryPanel, shopPanel, spinPanel) end)
 shopClose.Activated:Connect(function() shopPanel.Visible = false end)
 spinClose.Activated:Connect(function() spinPanel.Visible = false end)
+inventoryClose.Activated:Connect(function() inventoryPanel.Visible = false end)
 
 local function connectWallet()
 	local stats = player:WaitForChild("leaderstats", 15)
@@ -295,4 +402,39 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 UserInputService.WindowFocusReleased:Connect(function()
 	gameAction:FireServer("Sprint", false)
+end)
+
+-- Conveyor physics is applied locally to the owning character so the moving
+-- platform feels immediate; the resulting character motion replicates normally.
+local map = workspace:WaitForChild("GeneratedBeingsMap")
+local conveyor = map:WaitForChild("Looping Conveyor")
+local beltRayParams = RaycastParams.new()
+beltRayParams.FilterType = Enum.RaycastFilterType.Include
+beltRayParams.FilterDescendantsInstances = { conveyor }
+beltRayParams.IgnoreWater = true
+local halfX, halfZ = 42, 32
+local beltSpeed = 8
+
+RunService.Heartbeat:Connect(function()
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or humanoid.Health <= 0 then return end
+	local hit = workspace:Raycast(root.Position + Vector3.new(0, 1, 0), Vector3.new(0, -7, 0), beltRayParams)
+	if not hit or hit.Instance.Name ~= "Conveyor Surface" then return end
+
+	local x, z = root.Position.X, root.Position.Z
+	local edges = {
+		{ Distance = math.abs(z + halfZ), Direction = Vector3.new(1, 0, 0) },
+		{ Distance = math.abs(x - halfX), Direction = Vector3.new(0, 0, 1) },
+		{ Distance = math.abs(z - halfZ), Direction = Vector3.new(-1, 0, 0) },
+		{ Distance = math.abs(x + halfX), Direction = Vector3.new(0, 0, -1) },
+	}
+	local edge = edges[1]
+	for _, candidate in ipairs(edges) do
+		if candidate.Distance < edge.Distance then edge = candidate end
+	end
+	local walking = humanoid.MoveDirection * humanoid.WalkSpeed
+	local currentY = root.AssemblyLinearVelocity.Y
+	root.AssemblyLinearVelocity = Vector3.new(walking.X + edge.Direction.X * beltSpeed, currentY, walking.Z + edge.Direction.Z * beltSpeed)
 end)

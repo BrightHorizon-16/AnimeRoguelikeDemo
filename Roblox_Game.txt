@@ -11,12 +11,16 @@ The clean starter prototype has one larger shared base with a timber frame and
 no walls, surrounded by an animated rectangular conveyor. The map has bright
 green studded ground, a red approach path, and a spawn plaza.
 
-The screen GUI has a placeholder Shop and a Lucky Spin. Shop goods and 12 spin
-prizes are text-only generic Roblox-style items. A spin costs 50 test coins,
-shows 15 passing cards, and awards a random item selected on the server. Players
-start with 500 coins and get 10 passive test coins every 8 seconds. Purchased
-and won items are counted in PlaceholderInventory but have no effects yet.
-Hold Left Shift or Right Shift to sprint (16 normal / 24 sprint speed).
+The screen GUI has a scrollable placeholder Shop, a scrollable Inventory with
+live counts, and a Lucky Spin. Shop goods and 12 spin prizes are text-only
+generic Roblox-style items. A spin costs 50 test coins, shows 15 passing cards,
+and awards a random item selected on the server. Players start with 500 test
+coins and get 10 more every 8 seconds. Hold Left Shift or Right Shift to
+sprint (16 normal / 24 sprint speed). A controls guide stays at bottom-left.
+
+The conveyor has a continuous hidden collision track under the animated treads.
+It moves the player around the loop, including across the red walkway. Items
+are still placeholders and have no gameplay effect.
 
 RUNNING IN ROBLOX STUDIO
 -----------------------
@@ -37,6 +41,11 @@ NEXT WORK
 
 AUTHOR-SIGNED CHANGE HISTORY
 ----------------------------
+[Codex | 2026-10-15] Made the shop scrollable and expanded it to 12 goods; added
+a scrollable inventory panel with live counts and moved controls to the bottom
+left. Added continuous belt collision decking and player carry motion around
+the loop, including the red walkway crossing.
+
 [Codex | 2026-10-15] Expanded the map-only restart into one larger shared base
 with a looping animated conveyor, red approach path, and spawn plaza. Added a
 generic text-only item shop, a server-awarded 12-item spin with a 15-card visual
