@@ -88,7 +88,7 @@ local function addGatherNode(root, name, resource, amount, x, z, style)
 	prompt.Name = "GatherPrompt"
 	prompt.ActionText = "Gather"
 	prompt.ObjectText = resource == "Shards" and "Essence" or resource
-	prompt.KeyboardKeyCode = Enum.KeyCode.F
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.HoldDuration = 0.45
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false

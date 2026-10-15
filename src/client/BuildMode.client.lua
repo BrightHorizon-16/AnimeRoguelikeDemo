@@ -1,6 +1,6 @@
 -- BuildMode: the client side of the base builder.
---   V          open / close the build panel
---   click      place the selected building  |  X stops placement
+--   B / V      open / close the build panel
+--   E / click  place the selected building  |  X stops placement
 -- The server validates everything; this script only previews placement and sends requests.
 
 local Players = game:GetService("Players")
@@ -244,7 +244,7 @@ local function placeNow()
 	end
 end
 
-button(placeBar, "Place", UDim2.fromOffset(86, 32), UDim2.new(1, -190, 1, -42), placeNow)
+button(placeBar, "SELECT / PLACE  [E]", UDim2.fromOffset(142, 32), UDim2.new(1, -246, 1, -42), placeNow)
 button(placeBar, "Done", UDim2.fromOffset(86, 32), UDim2.new(1, -96, 1, -42), function() exitPlacing() end)
 
 local function updateGhost()
@@ -315,7 +315,7 @@ enterPlacing = function(id)
 	ContextActionService:BindActionAtPriority("BuilderPlace", function(_, inputState)
 		if inputState == Enum.UserInputState.Begin then placeNow() end
 		return Enum.ContextActionResult.Sink -- stops the click also triggering a basic attack
-	end, false, Enum.ContextActionPriority.High.Value, Enum.UserInputType.MouseButton1)
+	end, false, Enum.ContextActionPriority.High.Value, Enum.UserInputType.MouseButton1, Enum.KeyCode.E)
 	RunService:BindToRenderStep("BuilderGhost", Enum.RenderPriority.Camera.Value + 1, updateGhost)
 end
 
@@ -339,11 +339,11 @@ end
 -- Wiring
 -- ---------------------------------------------------------------------------
 
-button(gui, "BASE  (V)", UDim2.fromOffset(145, 38), UDim2.new(1, -318, 0, 18), togglePanel)
+button(gui, "BUILD BASE  [B]", UDim2.fromOffset(145, 38), UDim2.new(1, -318, 0, 18), togglePanel)
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
-	if input.KeyCode == Enum.KeyCode.V then togglePanel() end
+	if input.KeyCode == Enum.KeyCode.B or input.KeyCode == Enum.KeyCode.V then togglePanel() end
 	if input.KeyCode == Enum.KeyCode.X and placing then exitPlacing() end
 end)
 

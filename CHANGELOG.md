@@ -2,6 +2,22 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - Builder access and familiar controls
+
+Changed
+- Renamed the top-right builder button to **BUILD BASE [B]** so the construction feature is easy to spot; B opens it and V remains available as an alias.
+- Added E as the keyboard select/place action during construction; click/tap and the on-screen placement button remain available.
+- Changed the resource gathering prompt from F to E.
+- Changed sprint to hold Left Shift. Dash remains available from its on-screen button and is now mapped to Q.
+- Renamed the roster button to **BEINGS [N]**; mapped learned abilities to number keys 1 and 2 to avoid conflicts with interaction and dash.
+- Kept the active world focused on the player's open base plots. There is no tutorial area in the current world generator.
+- Updated controls and project handoff notes.
+
+Verification
+- Reviewed the source mappings and controls. Not run in Roblox Studio; verify Rojo sync, builder visibility, interaction prompts, and keyboard controls in Play mode.
+
+Signed: Codex
+
 ## 2026-10-15 - Starter cabin, being rolls, materials, and Studio dev grant
 
 Added

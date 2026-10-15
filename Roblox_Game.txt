@@ -29,12 +29,13 @@ WHAT IS IMPLEMENTED
 - Assigned beings produce passive coins. Roll price increases by 15 coins per
   owned being beyond the starter.
 - Gather wood, stone, and essence from eight respawning resource nodes around
-  the home area (F). Future mobs can add resource drops in the overworld.
+  the home area (E). Future mobs can add resource drops in the overworld.
 - Building placement, upgrades, demolition, material costs, and server validation.
 - Studio-only Build Pack: 5,000 coins, 500 wood, 500 stone, and 100 essence.
 - Saving/loading coins, materials, beings, learned abilities, and buildings,
   including migration from the previous fixed-character saves.
-- Sprint button and Left Ctrl; Shift remains dash. Combat controls remain, but
+- Hold-Shift sprint, E gather/select/place controls, Q dash, and clear builder
+  access. Combat controls remain, but
   there are no enemies in the current base-focused map.
 
 RUNNING IN ROBLOX STUDIO
@@ -54,11 +55,13 @@ the address.
 
 CONTROLS
 --------
-- Sprint: on-screen button or Left Ctrl.
-- Roster: BASE / ROSTER button or B.
-- Building: BASE button or V; click/tap to place, X cancels.
-- Combat (currently without enemies): click/right-click attacks, Shift dash,
-  C movement, Q/E learned abilities, R ultimate.
+- Movement: Roblox defaults (WASD and Space); hold Left Shift to sprint.
+- Gather: E near a resource node.
+- Roster: BEINGS button or N.
+- Building: BUILD BASE button or B (V alias); E or click/tap selects/places,
+  X cancels. The placement bar also has on-screen Select/Place and Done buttons.
+- Combat (currently without enemies): click/right-click attacks, Q dash,
+  C movement, 1/2 learned abilities, R ultimate.
 
 WORK LEFT
 ---------
@@ -89,6 +92,10 @@ AUTHOR-SIGNED CHANGE HISTORY
   generated roster fields, and visible collectible figures on plot stands.
 [Codex | 2026-10-15] Added Wood and Stone currencies, material construction
   costs, and a server-validated Studio-only DEV Build Pack.
+[Codex | 2026-10-15] Made the build-base button explicit, bound B to open it,
+  added E to select/place, changed gathering to E and sprinting to hold-Shift,
+  kept dash on Q and its visible button, and moved roster/learned abilities to
+  N and 1/2. Confirmed the active map generator contains no tutorial area.
 
 Every change must be signed by its actual author as Codex or Claude. Never
 attribute one author's work to the other.

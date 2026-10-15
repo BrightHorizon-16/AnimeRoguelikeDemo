@@ -15,9 +15,9 @@ The outer combat route and mob resource drops are not implemented yet. Wood, sto
 - Procedurally rolled names, abilities, rarity, and per-being income; roster saves and loads.
 - Up to eight displayed beings per plot; assigned beings are marked as working.
 - Build, upgrade, and sell using coin, wood, stone, and essence costs.
-- Respawning home-area resource nodes award wood, stone, or essence through server-handled prompts.
+- Respawning home-area resource nodes award wood, stone, or essence through server-handled E prompts.
 - Studio-only test resource pack: 5,000 coins, 500 wood, 500 stone, 100 essence.
-- Sprint, roster, placement UI, knockout respawn, and DataStore save/load.
+- Hold-Shift sprint, prominent build-base and beings buttons, E placement selection, knockout respawn, and DataStore save/load.
 
 ## Next steps
 

@@ -23,7 +23,7 @@ Keep Rojo running, connect the Studio plugin to `127.0.0.1:34872`, then press **
 
 ## Building and resources
 
-The starter cabin is free, cannot be sold, and occupies the center of the plot. The front area is reserved for eight being stands. Other structures can be placed behind the stands using the **BASE** panel (V), then upgraded or sold.
+The starter cabin is free, cannot be sold, and occupies the center of the plot. The front area is reserved for eight being stands. Other structures can be placed behind the stands using the clearly labeled **BUILD BASE** button (B), then upgraded or sold.
 
 | Building | Effect |
 | --- | --- |
@@ -36,7 +36,7 @@ The starter cabin is free, cannot be sold, and occupies the center of the plot. 
 
 ## Controls
 
-Sprint: on-screen button or Left Ctrl. Gather: F near a resource node. Base and roster: **BASE / ROSTER** or B; building panel: **BASE** or V. Combat actions are still present for future world expansion: click/right-click attacks, Shift dash, C movement, Q/E abilities, R ultimate.
+Movement uses Roblox defaults (WASD and Space). Hold Left Shift to sprint. Press E near a resource node to gather; during building placement, E selects/places the preview. Open the build catalog with **BUILD BASE** or B (V remains an alias). Open the being roster with **BEINGS** or N. Click/tap also places buildings, and X cancels placement. Combat controls: click/right-click attacks, Q dash, C movement, 1/2 learned abilities, R ultimate.
 
 ## Saving
 
