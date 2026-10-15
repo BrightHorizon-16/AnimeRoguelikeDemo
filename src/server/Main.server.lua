@@ -59,6 +59,8 @@ local function stateFor(player)
 			Title = character.Title,
 			Ability = character.Ability,
 			Description = character.Description,
+			Rarity = character.Rarity or "Common",
+			Income = character.Income or Config.WorkerIncome,
 			Assigned = character.Assigned,
 		})
 	end
@@ -71,6 +73,8 @@ local function stateFor(player)
 	return {
 		Roster = roster,
 		Learned = learned,
+		RecruitCost = math.max(10, Config.RecruitCost + math.max(0, #profile.roster - 1) * 15 - (profile.effects and profile.effects.RecruitDiscount or 0)),
+		DevMode = RunService:IsStudio(),
 		LockSeconds = math.max(0, math.ceil((profile.lockUntil or 0) - os.clock())),
 		Workers = workers,
 		WorkerSlots = Config.BaseWorkerSlots + bonusSlots,
@@ -198,25 +202,19 @@ local function handleAction(player, action, payload)
 	if BaseManager.handleAction(player, action, payload) then return end
 	if action == "Recruit" then
 		local coins = getStat(player, "Coins")
-		if not coins or coins.Value < Config.RecruitCost then notify(player, "Need " .. Config.RecruitCost .. " coins to recruit."); return end
-		coins.Value -= Config.RecruitCost
-		local options = {}
-		for _, candidate in ipairs(Config.Characters) do
-			local owned = false
-			for _, existing in ipairs(profile.roster) do if existing.Name == candidate.Name then owned = true; break end end
-			if not owned then table.insert(options, candidate) end
-		end
-		if #options == 0 then coins.Value += Config.RecruitCost; notify(player, "You have recruited every being in this demo."); return end
-		local pick = options[random:NextInteger(1, #options)]
-		local newCharacter = table.clone(pick)
+		local recruitCost = math.max(10, Config.RecruitCost + math.max(0, #profile.roster - 1) * 15 - effectsFor(profile).RecruitDiscount)
+		if #profile.roster >= Config.MaxRosterSize then notify(player, "Your character stands are full."); return end
+		if not coins or coins.Value < recruitCost then notify(player, "Need " .. recruitCost .. " coins to recruit."); return end
+		coins.Value -= recruitCost
+		local newCharacter = Config.rollCharacter(random)
 		newCharacter.Assigned = false
 		table.insert(profile.roster, newCharacter)
-		notify(player, "Recruited " .. newCharacter.Name .. " — " .. newCharacter.Title .. "!")
+		notify(player, "Rolled " .. newCharacter.Rarity .. " being: " .. newCharacter.Name .. "!")
 	elseif action == "Assign" then
 		local target = type(payload) == "number" and profile.roster[payload]
 		if not target then return end
 		if not target.Assigned and countWorkers(profile) >= workerSlots(profile) then
-			notify(player, "No free worker slots - build or upgrade a Barracks in the Builder Grounds.")
+			notify(player, "No free worker slots - build or upgrade a Barracks on your plot.")
 			return
 		end
 		target.Assigned = not target.Assigned
@@ -229,6 +227,19 @@ local function handleAction(player, action, payload)
 		local name = target.Name
 		table.remove(profile.roster, payload)
 		notify(player, name .. " was absorbed. " .. target.Ability .. " is now yours.")
+	elseif action == "Sprint" then
+		local hum = taggedHumanoid(player.Character)
+		if not hum or hum.Health <= 0 or type(payload) ~= "boolean" then return end
+		profile.sprinting = payload
+		hum.WalkSpeed = payload and Config.SprintSpeed or Config.WalkSpeed
+		actionEvent:FireClient(player, "SprintState", payload)
+	elseif action == "DevGrant" then
+		if not RunService:IsStudio() or payload ~= "BuildPack" then return end
+		addStat(player, "Coins", 5000)
+		addStat(player, "Wood", 500)
+		addStat(player, "Stone", 500)
+		addStat(player, "Shards", 100)
+		notify(player, "Studio test pack added: 5,000 coins, 500 wood, 500 stone, 100 essence.")
 	elseif action == "Attack" then
 		local root = getRoot(player.Character)
 		if not root then return end
@@ -274,6 +285,7 @@ local function handleAction(player, action, payload)
 		notify(player, "Ultimate unleashed!")
 	end
 	if action == "Recruit" or action == "Assign" or action == "Absorb" then
+		BaseManager.refreshRosterDisplays(player, profile)
 		actionEvent:FireClient(player, "Refresh")
 	end
 end
@@ -353,8 +365,14 @@ local function onCharacter(player, character)
 	if not profile then return end
 	local root = character:WaitForChild("HumanoidRootPart", 10)
 	local hum = character:WaitForChild("Humanoid", 10)
-	if root then root.CFrame = CFrame.new(0, 5, -12) end
+	local plot = profile.plot and Buildings.Plots[profile.plot]
+	local spawnOffset = profile.plot and profile.plot >= 3 and 8 or 24
+	local spawnPosition = plot and Vector3.new(plot.MinX + 16, 5, plot.MinZ + spawnOffset) or Vector3.new(0, 5, 0)
+	if root then root.CFrame = CFrame.new(spawnPosition) end
 	if hum then
+		profile.sprinting = false
+		hum.WalkSpeed = Config.WalkSpeed
+		actionEvent:FireClient(player, "SprintState", false)
 		hum.Died:Connect(function()
 			local seconds = lockSeconds(profile)
 			profile.lockUntil = os.clock() + seconds
@@ -374,7 +392,11 @@ end
 local function serializeProfile(player, profile)
 	local roster = {}
 	for _, character in ipairs(profile.roster) do
-		table.insert(roster, { Name = character.Name, Assigned = character.Assigned == true })
+		table.insert(roster, {
+			Name = character.Name, Title = character.Title, Ability = character.Ability,
+			Description = character.Description, Rarity = character.Rarity, Income = character.Income,
+			Assigned = character.Assigned == true,
+		})
 	end
 	local learned = {}
 	for ability in pairs(profile.learned) do table.insert(learned, ability) end
@@ -384,6 +406,8 @@ local function serializeProfile(player, profile)
 		Version = 1,
 		Coins = coins and coins.Value or 0,
 		Shards = shards and shards.Value or 0,
+		Wood = getStat(player, "Wood").Value,
+		Stone = getStat(player, "Stone").Value,
 		Roster = roster,
 		Learned = learned,
 		Buildings = BaseManager.serialize(profile),
@@ -391,21 +415,32 @@ local function serializeProfile(player, profile)
 end
 
 applySaved = function(player, profile, data)
-	if type(data) ~= "table" then return end
+	if type(data) ~= "table" then data = {} end
 	local coins, shards = getStat(player, "Coins"), getStat(player, "Shards")
 	if coins and type(data.Coins) == "number" then coins.Value = math.max(0, math.floor(data.Coins)) end
 	if shards and type(data.Shards) == "number" then shards.Value = math.max(0, math.floor(data.Shards)) end
+	for _, resource in ipairs({ "Wood", "Stone" }) do
+		local stat = getStat(player, resource)
+		if stat and type(data[resource]) == "number" then stat.Value = math.clamp(math.floor(data[resource]), 0, 1000000000) end
+	end
 	if type(data.Roster) == "table" then
 		local roster = {}
 		for _, saved in ipairs(data.Roster) do
+			if #roster >= Config.MaxRosterSize then break end
 			local definition = type(saved) == "table" and findCharacter(saved.Name)
-			if definition then
-				local character = table.clone(definition)
+			if type(saved) == "table" and type(saved.Name) == "string" and #saved.Name <= 48 then
+				local character = definition and table.clone(definition) or {}
+				character.Name = saved.Name
+				character.Title = type(saved.Title) == "string" and string.sub(saved.Title, 1, 48) or character.Title or "Generated Being"
+				character.Ability = type(saved.Ability) == "string" and string.sub(saved.Ability, 1, 48) or character.Ability or "Base Pulse"
+				character.Description = type(saved.Description) == "string" and string.sub(saved.Description, 1, 120) or character.Description or "An original generated being."
+				character.Rarity = ({ Common = true, Uncommon = true, Rare = true, Epic = true })[saved.Rarity] and saved.Rarity or character.Rarity or "Common"
+				character.Income = type(saved.Income) == "number" and math.clamp(math.floor(saved.Income), 1, 100) or character.Income or Config.WorkerIncome
 				character.Assigned = saved.Assigned == true
 				table.insert(roster, character)
 			end
 		end
-		if #roster > 0 then profile.roster = roster end
+		profile.roster = roster
 	end
 	if type(data.Learned) == "table" then
 		profile.learned = { ["Base Pulse"] = true }
@@ -414,6 +449,7 @@ applySaved = function(player, profile, data)
 		end
 	end
 	BaseManager.restore(player, profile, data.Buildings)
+	BaseManager.refreshRosterDisplays(player, profile)
 end
 
 local function saveProfile(player)
@@ -425,16 +461,18 @@ local function saveProfile(player)
 end
 
 local function onPlayer(player)
-	local coins = ensureStat(player, "Coins", 100)
+	ensureStat(player, "Coins", 100)
 	ensureStat(player, "Shards", 0)
+	ensureStat(player, "Wood", 0)
+	ensureStat(player, "Stone", 0)
+	local starterBeing = Config.rollCharacter(random)
+	starterBeing.Assigned = true
 	profiles[player] = {
-		roster = {
-			{ Name = "Kairo", Title = "Cinder Vanguard", Ability = "Cinder Rush", Description = "A flaming dash that damages nearby enemies.", Assigned = true },
-			{ Name = "Vexa", Title = "Rift Weaver", Ability = "Gravity Snare", Description = "Pulls nearby enemies together and damages them.", Assigned = false },
-		},
+		roster = { starterBeing },
 		learned = { ["Base Pulse"] = true },
 		lockUntil = 0,
-		buildings = {},
+		sprinting = false,
+		buildings = { { Id = "StarterHouse", X = 3, Z = 3, Level = 1 } },
 		effects = Buildings.effects({}),
 	}
 	local profile = profiles[player]
@@ -446,6 +484,9 @@ local function onPlayer(player)
 		if ok then
 			applySaved(player, profile, data)
 			profile.canSave = true -- only save if the load succeeded, so defaults never overwrite real data
+		else
+			BaseManager.restore(player, profile, nil)
+			BaseManager.refreshRosterDisplays(player, profile)
 		end
 		enforceWorkerCap(player)
 		actionEvent:FireClient(player, "BaseRefresh")
@@ -456,7 +497,12 @@ local function onPlayer(player)
 		while player.Parent do
 			local p = profiles[player]
 			if p then
-				local income = countWorkers(p) * Config.WorkerIncome + effectsFor(p).IncomeBonus
+				local bonuses = effectsFor(p)
+				local income = 0
+				for _, being in ipairs(p.roster) do
+					if being.Assigned then income += (being.Income or Config.WorkerIncome) + bonuses.WorkerIncomeBonus end
+				end
+				income += bonuses.IncomeBonus
 				addStat(player, "Coins", income)
 				if income > 0 then notify(player, "Base income: +" .. income .. " coins") end
 			end
@@ -466,6 +512,45 @@ local function onPlayer(player)
 end
 
 WorldBuilder.build(world, Config)
+for _, node in ipairs(world:WaitForChild("GatherNodes"):GetChildren()) do
+	local prompt = node:FindFirstChild("GatherPrompt", true)
+	local resource = node:GetAttribute("Resource")
+	local amount = node:GetAttribute("Amount")
+	if prompt and (resource == "Wood" or resource == "Stone" or resource == "Shards") then
+		local savedParts = {}
+		for _, descendant in ipairs(node:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				savedParts[descendant] = { Transparency = descendant.Transparency, CanCollide = descendant.CanCollide }
+			end
+		end
+		prompt.Triggered:Connect(function(player)
+			local profile = profiles[player]
+			local root = getRoot(player.Character)
+			if not profile or node:GetAttribute("Available") ~= true or not root then return end
+			if (root.Position - prompt.Parent.Position).Magnitude > prompt.MaxActivationDistance + 2 then return end
+			local stat = getStat(player, resource)
+			if not stat then return end
+			node:SetAttribute("Available", false)
+			prompt.Enabled = false
+			for part in pairs(savedParts) do
+				if part.Parent then part.Transparency = 1; part.CanCollide = false end
+			end
+			stat.Value += amount
+			notify(player, string.format("Gathered %d %s.", amount, resource == "Shards" and "essence" or string.lower(resource)))
+			task.delay(18, function()
+				if not node.Parent then return end
+				node:SetAttribute("Available", true)
+				for part, appearance in pairs(savedParts) do
+					if part.Parent then
+						part.Transparency = appearance.Transparency
+						part.CanCollide = appearance.CanCollide
+					end
+				end
+				prompt.Enabled = true
+			end)
+		end)
+	end
+end
 BaseManager.init({
 	world = world,
 	Config = Config,
@@ -515,8 +600,11 @@ RunService.Heartbeat:Connect(function()
 	for player, profile in pairs(profiles) do
 		if profile.lockUntil and profile.lockUntil > os.clock() then
 			local root = getRoot(player.Character)
-			if root and root.Position.Z > 52 then
-				root.CFrame = CFrame.new(0, 5, -12)
+			if root and (math.abs(root.Position.X) > 55 or math.abs(root.Position.Z) > 55) then
+				local plot = profile.plot and Buildings.Plots[profile.plot]
+				local spawnOffset = profile.plot and profile.plot >= 3 and 8 or 24
+				local home = plot and Vector3.new(plot.MinX + 16, 5, plot.MinZ + spawnOffset) or Vector3.new(0, 5, 0)
+				root.CFrame = CFrame.new(home)
 				root.AssemblyLinearVelocity = Vector3.zero
 			end
 		end

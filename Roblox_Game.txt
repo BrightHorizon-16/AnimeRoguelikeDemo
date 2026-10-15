@@ -1,0 +1,94 @@
+GENERATED BEINGS — ROBLOX PROJECT HANDOFF
+========================================
+
+Project folder: C:\Games\AnimeRoguelikeDemo
+Rojo project: default.project.json
+Status date: 2026-10-15
+
+CURRENT GAME LOOP
+-----------------
+The current map is an open home area with no perimeter walls. Each player claims
+one of four plots, spawns beside a free Starter Cabin, and starts with one random
+being assigned to work. Roll more original generated beings with coins. Rarity
+affects income. Assign/unassign beings through the roster panel; each being also
+appears as a generated collectible figure on a stand at the front of the plot.
+Build and upgrade behind the stands using coins, wood, stone, and essence.
+
+The co-op combat route and ordinary resource drops are future work. The DEV menu
+is Studio-only and grants test materials for trying construction.
+
+WHAT IS IMPLEMENTED
+-------------------
+- Rojo mapping for shared modules, server scripts, and client scripts.
+- Open base map: central plaza/checkpoint, paths, four personal 8x8-cell plots,
+  plot signs, and a free cabin on each claimed plot.
+- Random being rolls: generated names, titles, ability, Common/Uncommon/Rare/Epic
+  rarity, and per-being income. Maximum roster size is eight.
+- Visible generated figures on stands at each player's plot; labels show name,
+  rarity, and Working/Reserve status.
+- Assigned beings produce passive coins. Roll price increases by 15 coins per
+  owned being beyond the starter.
+- Gather wood, stone, and essence from eight respawning resource nodes around
+  the home area (F). Future mobs can add resource drops in the overworld.
+- Building placement, upgrades, demolition, material costs, and server validation.
+- Studio-only Build Pack: 5,000 coins, 500 wood, 500 stone, and 100 essence.
+- Saving/loading coins, materials, beings, learned abilities, and buildings,
+  including migration from the previous fixed-character saves.
+- Sprint button and Left Ctrl; Shift remains dash. Combat controls remain, but
+  there are no enemies in the current base-focused map.
+
+RUNNING IN ROBLOX STUDIO
+-----------------------
+In PowerShell:
+  cd C:\Games\AnimeRoguelikeDemo
+  & 'C:\Games\rojo.exe' serve default.project.json
+
+Keep the Rojo terminal open, connect the Studio plugin to 127.0.0.1:34872, and
+press Play. The map appears at runtime. The DEV button only appears during Studio
+play and only the server can apply its fixed grant pack.
+
+If Rojo says the port is in use, another Rojo server is already listening;
+connect Studio to that server or stop it before starting another. Double-clicking
+rojo.exe may open a process, but the port conflict means a listener already owns
+the address.
+
+CONTROLS
+--------
+- Sprint: on-screen button or Left Ctrl.
+- Roster: BASE / ROSTER button or B.
+- Building: BASE button or V; click/tap to place, X cancels.
+- Combat (currently without enemies): click/right-click attacks, Shift dash,
+  C movement, Q/E learned abilities, R ultimate.
+
+WORK LEFT
+---------
+- Run the current build in Studio Play and inspect cabin spawn, being figures,
+  plot layout, resource HUD, and building placement.
+- Add mob resource drops through the later overworld loop.
+- Expand co-op combat, linear world progression, and dropped resources.
+- Add more being visuals/animations, base structures, and mobile polish.
+- Test multiplayer and DataStore behavior in a published Studio place with API
+  access enabled.
+
+AUTHOR-SIGNED CHANGE HISTORY
+----------------------------
+[Codex | 2026-10-13] Created initial Rojo structure, project mapping, economy,
+  placeholder beings, roster/combat server logic, client HUD, and README.
+[Claude | 2026-10-15] Fixed floor overlap and floating enemy/crystal placement;
+  added runtime floor checks and extracted WorldBuilder.lua.
+[Claude | 2026-10-15] Built the original walled base blockout with Guild Hall,
+  plaza, stations, gate, lamps, and paths.
+[Claude | 2026-10-15] Added Builder Grounds, four 6x6 plots, building catalog,
+  generated models, client builder, server validation, bonuses, and saving.
+[Codex | 2026-10-15] Moved plots inside a base-focused map, rebalanced base
+  buildings, removed Builder Grounds travel controls/tutorial copy, and added
+  server-authoritative sprint with button/Left Ctrl.
+[Codex | 2026-10-15] Removed perimeter walls and Guild Hall; added a free personal
+  Starter Cabin and home-plot spawn for each player.
+[Codex | 2026-10-15] Added randomized being rolls, rarity-based income, saved
+  generated roster fields, and visible collectible figures on plot stands.
+[Codex | 2026-10-15] Added Wood and Stone currencies, material construction
+  costs, and a server-validated Studio-only DEV Build Pack.
+
+Every change must be signed by its actual author as Codex or Claude. Never
+attribute one author's work to the other.

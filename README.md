@@ -1,63 +1,45 @@
-# Generated Beings — co-op Roblox prototype
+# Generated Beings — co-op base-builder prototype
 
-This is a small playable systems demo for the concept we discussed. It uses simple generated geometry and original placeholder characters; it does not include licensed media characters or final art.
+The current prototype focuses on an open, unwalled home area. Each player starts with a small cabin and one randomly generated being. Roll more beings, assign them as workers to earn coins, and build up your plot with coins and materials. Beings are shown as collectible figures on stands at the front of the plot.
 
-## Prototype loop
+## Play in Studio
 
-- Spawn at the base checkpoint with 100 coins, Kairo assigned as a worker, and Vexa in reserve.
-- Assigned characters generate 5 coins every 10 seconds.
-- Recruit another random being for 50 coins. Wildlings drop 12 coins and 1 shard.
-- Assign beings to the base for income, or move them to reserve and absorb one to permanently learn its ability. Absorption consumes that character.
-- Fight through a short connected wilds region with light attack, heavy attack, dash, learned specials, and an ultimate.
-- Spend coins and shards in the **Builder Grounds** (behind the Guild Hall, press V) to build your own base: mines, barracks, a forge, an infirmary, a bounty board, and decorations. Buildings give real bonuses and can be upgraded to level 3.
-- Getting knocked out respawns you at base and keeps you there for 60 seconds (an Infirmary shortens this). You can still manage your roster and build while waiting.
-- Enemies are shared, so multiple players in the same server can fight together.
+From PowerShell:
 
-## Files
+```powershell
+cd C:\Games\AnimeRoguelikeDemo
+& 'C:\Games\rojo.exe' serve default.project.json
+```
 
-- `default.project.json` — Rojo project mapping
-- `src/shared/Config.lua` — recruit and economy settings plus original character catalog
-- `src/shared/Buildings.lua` — building catalog (costs, levels, effects), plot layout, and the pure placement/bonus rules used by both server and client
-- `src/server/Main.server.lua` — enemies, combat validation, base economy, roster, knockout lock, and saving/loading
-- `src/server/BaseManager.lua` — base builder: plot claiming, build/upgrade/demolish with server-side validation, bonuses, save data
-- `src/server/BuildingModels.lua` — 3D models for each building type and level
-- `src/server/PartKit.lua` — shared part-building helpers
-- `src/server/PlayerData.lua` — DataStore wrapper (never overwrites saved data after a failed load)
-- `src/server/WorldBuilder.lua` — generates the map at runtime: floors, walled base, gate, path rails, wilds decoration, and a floor self-check
-- `src/client/Main.client.lua` — HUD, roster controls, keyboard/mouse controls, and touch-friendly action buttons
-- `src/client/BuildMode.client.lua` — build panel, grid placement preview, upgrade and sell controls
+Keep Rojo running, connect the Studio plugin to `127.0.0.1:34872`, then press **Play**. The map is generated when the server starts. The Studio-only **DEV** button grants 5,000 coins, 500 wood, 500 stone, and 100 essence. It is server-checked and does not appear in live servers.
 
-## Open in Roblox Studio
+## Current loop
 
-The project is mapped for Rojo. Install both the Rojo CLI and the Rojo Studio plugin. In a terminal, run `cd C:\Games\AnimeRoguelikeDemo` followed by `rojo serve`, leave that terminal open, and connect the Studio plugin to `127.0.0.1:34872`.
+- Start with a simple cabin, 100 coins, and one random common-to-epic being assigned to work.
+- Roll additional beings for coins. Higher rarities earn more coins each income tick. Roll cost increases with each being owned.
+- Assign or unassign beings to control which ones work. Reserve beings can be absorbed to learn their ability.
+- Gather wood, stone, and essence from resource nodes around the home area. Nodes return after 18 seconds. Build and upgrade structures using coins and gathered materials.
+- Each server has four personal plots, each with room for up to eight displayed beings.
 
-After connecting, the Explorer should contain `ReplicatedStorage > Shared > Config` and `Buildings`, `ServerScriptService > Main` (with `Main`, `WorldBuilder`, `BaseManager`, `BuildingModels`, `PartKit`, `PlayerData`), and `StarterPlayer > StarterPlayerScripts > Client` (with `Main` and `BuildMode`). The 3D scene is built by the server script when the game starts, so the edit-mode viewport is empty. Press **Play** to generate the base and wilds; use **Test → Start** with multiple players to try co-op. If the scene is still empty during Play, open **View → Output** and check for a red script error.
+## Building and resources
 
-Controls: click for basic attack, right-click for heavy attack, Shift to dash, C for the movement leap, Q/E for the first two learned abilities, R for ultimate, B to open the base roster, and V to open the builder (X stops placing). The on-screen action bar also works with touch input.
+The starter cabin is free, cannot be sold, and occupies the center of the plot. The front area is reserved for eight being stands. Other structures can be placed behind the stands using the **BASE** panel (V), then upgraded or sold.
 
-## Base layout
+| Building | Effect |
+| --- | --- |
+| Crystal Mine | +4 / +9 / +15 coins per income tick |
+| Barracks | +1 / +2 / +3 worker slots |
+| Training Hall | +1 / +2 / +4 coins per worker per tick |
+| Recruitment Lodge | -5 / -10 / -15 coins per roll |
+| Market | +3 / +6 / +10 coins per income tick |
+| Lantern, Garden Tree, Hero Statue | Decorations |
 
-The home island is a walled compound. From the checkpoint plaza (center): the Guild Hall with the roster desk is at the back, five character stations (Kairo, Vexa, Mori, Nyx, Aru) line the east promenade, the Recruitment Shrine and Absorption Altar are on the west side, and the Expedition Gate leads out to the path and wilds. The roster panel (B) works anywhere; the buildings are labelled to show where each action belongs. Invisible rails keep players on the path and inside the wilds. When the map is built, the Output window prints a floor check result.
+## Controls
 
-## Base builder
-
-Walk through the **Builder Gate** in the back wall of the base (it leads onto the Builder Grounds). Each player claims one of four plots automatically when they join; your name appears on the plot sign. Press **V** (or the BUILD button), pick a building, then click a green spot on your plot to place it (on touch screens, tap to aim and press Place). The panel also lets you upgrade, sell (50% of coins spent comes back), and teleport to your plot or back to base.
-
-| Building | Max | Effect per level (1 / 2 / 3) |
-| --- | --- | --- |
-| Crystal Mine (2x2) | 3 | +4 / +9 / +15 coins per income tick |
-| Barracks (2x2) | 1 | +1 / +2 / +3 worker slots (base gives 2) |
-| Forge (2x2) | 1 | +10% / +20% / +30% damage |
-| Infirmary (2x2) | 1 | knockout lock -10s / -20s / -30s (never below 10s) |
-| Bounty Board (2x2) | 1 | +3 / +6 / +10 coins per kill |
-| Lantern, Garden Tree, Hero Statue (1x1) | 8 / 8 / 4 | decoration only |
-
-Costs and effects live in `src/shared/Buildings.lua`, so balancing is a data edit. The server re-checks every request (position, limits, cost), so the client preview can't be used to cheat.
+Sprint: on-screen button or Left Ctrl. Gather: F near a resource node. Base and roster: **BASE / ROSTER** or B; building panel: **BASE** or V. Combat actions are still present for future world expansion: click/right-click attacks, Shift dash, C movement, Q/E abilities, R ultimate.
 
 ## Saving
 
-Coins, shards, the roster, learned abilities, and your buildings save automatically (every minute, when you leave, and when the server shuts down). Saved data is only ever written after a successful load, so a DataStore outage can't wipe a player's progress. In Roblox Studio, saving needs the place to be published and **Game Settings > Security > Enable Studio Access to API Services** turned on; without that the game still runs, it just doesn't save, and the Output window says so.
+Coins, wood, stone, essence, roster, learned abilities, and buildings save after a successful DataStore load. Studio saving requires a published place and **Game Settings > Security > Enable Studio Access to API Services**. If DataStore loading fails, progress is not saved that session to protect existing data.
 
-## Demo limits
-
-This is a first playable blockout, not a production-ready game. There is no boss encounter, polished animation, ability selection UI, or full mobile layout yet. The current combat abilities are small area attacks so the full loop is easy to try. The first starter ability is a simple demonstration skill.
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) and [Roblox_Game.txt](Roblox_Game.txt) for the current state and author-signed work history.

@@ -2,6 +2,43 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - Starter cabin, being rolls, materials, and Studio dev grant
+
+Added
+- Removed the perimeter walls, towers, gate, and Guild Hall from the active map. Every player gets a free Starter Cabin on their plot and spawns at that cabin.
+- Randomized being rolls with generated names, abilities, Common/Uncommon/Rare/Epic rarity, rarity-scaled income, and an eight-being cap.
+- Procedural being figures on stands at the front of each plot; figures show Working or Reserve state.
+- Wood and Stone currencies and material requirements for buildings/upgrades. Shards are presented as Essence.
+- Eight respawning resource nodes around the open home area; server-handled F prompts award wood, stone, or essence.
+- Studio-only DEV menu and server-checked Build Pack grant: 5,000 coins, 500 wood, 500 stone, and 100 essence.
+- Persistence for generated being fields and materials, with migration from old fixed character saves.
+
+Changed
+- Players start with one assigned random being, 100 coins, no materials, and a free cabin.
+- Roll costs increase by 15 coins for each additional owned being.
+- The front three plot rows are reserved for the collectible stands; building placement is behind them.
+- Updated README, status, and handoff notes. Mob resource drops remain planned for the future overworld.
+
+Verification
+- Reviewed source and project docs. Not yet run in Roblox Studio; verify cabin/stand layout, spawn, dev panel, and construction placement in Play mode.
+
+Signed: Codex
+
+## 2026-10-15 - Base-only focus and sprint controls
+
+Changed
+- Reworked `WorldBuilder.lua` into a compact, walled home base with a central checkpoint, Guild Hall, four 8x8-cell home plots, and connecting paths. Removed the overworld route and left enemy spawns empty so development can focus on the base.
+- Moved four plots into the corners of the home island and enlarged them from 6x6 to 8x8 cells. Kept the existing plot ownership, save format, and building placement system.
+- Rebalanced/reframed base buildings: Crystal Mine and Market generate income, Barracks add worker slots, Training Hall boosts worker income, and Recruitment Lodge discounts recruiting. Building costs now use coins.
+- Removed Builder Grounds teleport buttons and tutorial-style directions from the build panel; renamed it MY BASE and simplified placement feedback.
+- Added server-authoritative sprint at 24 WalkSpeed (normal speed 16), with an on-screen toggle and Left Ctrl. Character respawn resets sprint.
+- Updated README and project status to describe the active base-only scope; restored `Roblox_Game.txt` with current state and signed work history.
+
+Verification
+- Reviewed changed client/server code and project descriptions. Not yet run in Roblox Studio; visual layout and client input need a Play-mode review.
+
+Signed: Codex
+
 ## 2026-10-15 - Base builder, Builder Grounds, and saving
 
 Added

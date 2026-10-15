@@ -32,6 +32,23 @@ local C = {
 -- relative to the building's centre; y = 0 is the top of the plot pad.
 local BUILDERS = {}
 
+BUILDERS.StarterHouse = {
+	labelY = 10,
+	color = C.orange,
+	build = function(b)
+		b.put(-3.4, 3.4, 0.3, 4.8, -3.2, -2.7, C.wood, M.WoodPlanks, "Back Wall")
+		b.put(-3.4, -2.9, 0.3, 4.8, -2.7, 3.2, C.wood, M.WoodPlanks, "Left Wall")
+		b.put(2.9, 3.4, 0.3, 4.8, -2.7, 3.2, C.wood, M.WoodPlanks, "Right Wall")
+		b.put(-3.4, -1.0, 0.3, 4.8, 2.7, 3.2, C.wood, M.WoodPlanks, "Front Left Wall")
+		b.put(1.0, 3.4, 0.3, 4.8, 2.7, 3.2, C.wood, M.WoodPlanks, "Front Right Wall")
+		b.put(-1.0, 1.0, 3.2, 4.8, 2.7, 3.2, C.wood, M.WoodPlanks, "Door Header")
+		b.put(-3.8, 3.8, 4.8, 5.4, -3.7, 3.7, C.darkWood, M.WoodPlanks, "Cabin Roof")
+		b.put(-2.4, -1.3, 2.4, 3.5, 3.21, 3.4, C.cyan, M.Glass, "Window")
+		b.put(1.3, 2.4, 2.4, 3.5, 3.21, 3.4, C.cyan, M.Glass, "Window")
+		b.put(-4.2, -3.4, 0.3, 2.8, -1.8, -0.8, C.stone, M.Slate, "Chimney")
+	end,
+}
+
 BUILDERS.CrystalMine = {
 	labelY = 8,
 	color = C.cyan,
@@ -150,7 +167,7 @@ local BuildingModels = {}
 
 -- Creates the model for building `id` at world centre (cx, cz), standing on ground height `groundY`.
 -- Returns the Model, parented to `parent`.
-function BuildingModels.create(id, level, cx, cz, groundY, parent, ownerName)
+function BuildingModels.create(id, level, cx, cz, groundY, parent, ownerName, yaw)
 	local def = Buildings.Catalog[id]
 	local spec = BUILDERS[id]
 	if not def or not spec then return nil end
@@ -158,19 +175,25 @@ function BuildingModels.create(id, level, cx, cz, groundY, parent, ownerName)
 	local model = Instance.new("Model")
 	model.Name = def.Name
 
+	yaw = yaw or 0
+	local flip = math.abs(yaw) > 0.1
 	local b = { model = model, level = level }
 	function b.put(x0, x1, y0, y1, z0, z1, color, material, name)
+		if flip then x0, x1, z0, z1 = -x1, -x0, -z1, -z0 end
 		return Kit.box(model, name or "Part", cx + x0, cx + x1, groundY + y0, groundY + y1, cz + z0, cz + z1, color, material)
 	end
 	function b.ball(x, y, z, diameter, color, material, name)
+		if flip then x, z = -x, -z end
 		return Kit.ball(model, name or "Ball", cx + x, groundY + y, cz + z, diameter, color, material)
 	end
 	function b.disc(x, z, diameter, y0, y1, color, material, name)
+		if flip then x, z = -x, -z end
 		return Kit.disc(model, name or "Disc", cx + x, cz + z, diameter, groundY + y1, color, material, groundY + y0)
 	end
 	-- Rotated block: centre (x, y, z), yaw and roll in radians.
 	function b.part(size, x, y, z, yaw, roll, color, material, name)
-		local cframe = CFrame.new(cx + x, groundY + y, cz + z) * CFrame.Angles(0, yaw, roll)
+		if flip then x, z = -x, -z end
+		local cframe = CFrame.new(cx + x, groundY + y, cz + z) * CFrame.Angles(0, (yaw or 0) + (flip and math.pi or 0), roll)
 		return Kit.newPart(model, name or "Part", size, cframe, color, material)
 	end
 

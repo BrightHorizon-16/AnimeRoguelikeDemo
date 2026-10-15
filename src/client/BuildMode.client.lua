@@ -1,7 +1,6 @@
 -- BuildMode: the client side of the base builder.
 --   V          open / close the build panel
---   click      place the building (mouse)  |  tap to aim, then press Place (touch)
---   X          stop placing
+--   click      place the selected building  |  X stops placement
 -- The server validates everything; this script only previews placement and sends requests.
 
 local Players = game:GetService("Players")
@@ -84,18 +83,25 @@ local function resources()
 	local stats = player:FindFirstChild("leaderstats")
 	local coins = stats and stats:FindFirstChild("Coins")
 	local shards = stats and stats:FindFirstChild("Shards")
-	return coins and coins.Value or 0, shards and shards.Value or 0
+	local wood = stats and stats:FindFirstChild("Wood")
+	local stone = stats and stats:FindFirstChild("Stone")
+	return { Coins = coins and coins.Value or 0, Shards = shards and shards.Value or 0, Wood = wood and wood.Value or 0, Stone = stone and stone.Value or 0 }
 end
 
 local function canAfford(cost)
-	local coins, shards = resources()
-	return coins >= cost.Coins and shards >= cost.Shards
+	local owned = resources()
+	for resource, amount in pairs(cost) do
+		if (owned[resource] or 0) < amount then return false end
+	end
+	return true
 end
 
 local function costText(cost)
 	local parts = {}
 	if cost.Coins > 0 then table.insert(parts, cost.Coins .. " coins") end
-	if cost.Shards > 0 then table.insert(parts, cost.Shards .. " shards") end
+	if cost.Wood > 0 then table.insert(parts, cost.Wood .. " wood") end
+	if cost.Stone > 0 then table.insert(parts, cost.Stone .. " stone") end
+	if cost.Shards > 0 then table.insert(parts, cost.Shards .. " essence") end
 	return #parts > 0 and table.concat(parts, " + ") or "free"
 end
 
@@ -110,11 +116,11 @@ end
 -- Build panel
 -- ---------------------------------------------------------------------------
 
-panel = make("Frame", { Name = "BuilderPanel", Size = UDim2.fromOffset(400, 450), Position = UDim2.new(0, 396, 0, 102), Visible = false }, gui)
+panel = make("Frame", { Name = "BuilderPanel", Size = UDim2.fromOffset(400, 450), Position = UDim2.new(0.5, -200, 0, 92), Visible = false }, gui)
 stylePanel(panel)
 make("TextLabel", {
 	BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -60, 0, 24),
-	Font = Enum.Font.GothamBold, Text = "BUILDER GROUNDS", TextColor3 = Color3.fromRGB(205, 175, 255),
+	Font = Enum.Font.GothamBold, Text = "MY BASE", TextColor3 = Color3.fromRGB(205, 175, 255),
 	TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
 }, panel)
 button(panel, "×", UDim2.fromOffset(30, 28), UDim2.new(1, -40, 0, 7), function() panel.Visible = false end)
@@ -123,10 +129,8 @@ summary = make("TextLabel", {
 	Font = Enum.Font.Gotham, Text = "Loading…", TextColor3 = Color3.fromRGB(180, 230, 255),
 	TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
 }, panel)
-button(panel, "Go to my plot", UDim2.fromOffset(186, 30), UDim2.fromOffset(10, 72), function() actionEvent:FireServer("GotoPlot") end)
-button(panel, "Back to base", UDim2.fromOffset(186, 30), UDim2.fromOffset(204, 72), function() actionEvent:FireServer("GotoBase") end)
 list = make("ScrollingFrame", {
-	BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(10, 110), Size = UDim2.new(1, -20, 1, -120),
+	BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(10, 76), Size = UDim2.new(1, -20, 1, -86),
 	CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 5,
 }, panel)
 make("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, list)
@@ -157,6 +161,8 @@ local function effectSummary(effects)
 	local parts = {}
 	if effects.WorkerSlots > 0 then table.insert(parts, "+" .. effects.WorkerSlots .. " worker slots") end
 	if effects.IncomeBonus > 0 then table.insert(parts, "+" .. effects.IncomeBonus .. " coins/tick") end
+	if effects.WorkerIncomeBonus > 0 then table.insert(parts, "+" .. effects.WorkerIncomeBonus .. " coins/worker/tick") end
+	if effects.RecruitDiscount > 0 then table.insert(parts, "-" .. effects.RecruitDiscount .. " coins/recruit") end
 	if effects.DamageBonus > 0 then table.insert(parts, "+" .. math.floor(effects.DamageBonus * 100 + 0.5) .. "% damage") end
 	if effects.LockReduction > 0 then table.insert(parts, "-" .. effects.LockReduction .. "s knockout lock") end
 	if effects.KillCoinBonus > 0 then table.insert(parts, "+" .. effects.KillCoinBonus .. " coins/kill") end
@@ -172,10 +178,10 @@ rebuildPanel = function()
 	if state.Plot then
 		summary.Text = "Your plot: #" .. state.Plot .. "   Bonuses: " .. effectSummary(state.Effects)
 	else
-		summary.Text = "No free plot - the Builder Grounds are full."
+		summary.Text = "No free base plot is available."
 	end
 
-	addHeader("BUILD  (pick one, then click your plot)", 1)
+	addHeader("BUILDINGS", 1)
 	for order, id in ipairs(Buildings.Order) do
 		local def = Buildings.Catalog[id]
 		local count = Buildings.countOf(state.Buildings, id)
@@ -195,9 +201,9 @@ rebuildPanel = function()
 	end
 
 	addHeader("YOUR BASE", 100)
-	if #state.Buildings == 0 then
-		addText(addRow(101, 30), 6, 18, "Nothing built yet.", 12, Color3.fromRGB(170, 180, 195))
-	end
+	local starterRow = addRow(101, 48)
+	addText(starterRow, 5, 20, "Starter Cabin", 13, Color3.fromRGB(255, 225, 165), Enum.Font.GothamBold)
+	addText(starterRow, 26, 17, "Your free home. Fixed in place.", 12, Color3.fromRGB(170, 180, 195))
 	for order, owned in ipairs(state.Buildings) do
 		local row = addRow(110 + order, 80)
 		addText(row, 5, 20, owned.Name .. "   Lv " .. owned.Level .. "/" .. owned.MaxLevel, 13, Color3.fromRGB(255, 225, 165), Enum.Font.GothamBold)
@@ -225,7 +231,7 @@ placeLabel = make("TextLabel", {
 }, placeBar)
 local placeHint = make("TextLabel", {
 	BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -230, 0, 28),
-	Font = Enum.Font.Gotham, Text = "Green = free spot. Click to place, X to stop.", TextColor3 = Color3.new(1, 1, 1),
+	Font = Enum.Font.Gotham, Text = "", TextColor3 = Color3.new(1, 1, 1),
 	TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
 }, placeBar)
 
@@ -234,7 +240,7 @@ local function placeNow()
 	if ghostOk then
 		actionEvent:FireServer("Build", { Id = placing, X = ghostCell.X, Z = ghostCell.Z })
 	else
-		placeHint.Text = "You can't build there - pick a green spot."
+		placeHint.Text = "Invalid placement."
 	end
 end
 
@@ -258,10 +264,12 @@ local function updateGhost()
 	end
 
 	local cellX, cellZ = Buildings.worldToCell(state.Plot, hit.Position.X, hit.Position.Z, def.W, def.D)
-	local ok = Buildings.canPlace(state.Buildings, placing, cellX, cellZ)
+	local ok = Buildings.canPlace(state.Buildings, placing, cellX, cellZ, state.Plot)
 	if ok and not canAfford(Buildings.costFor(placing, 1)) then
 		ok = false
-		placeHint.Text = "Not enough resources for this building."
+		placeHint.Text = "Missing coins or building materials."
+	elseif ok then
+		placeHint.Text = ""
 	end
 	local centerX, centerZ = Buildings.cellCenter(state.Plot, cellX, cellZ, def.W, def.D)
 	-- Keep the ghost inside the plot so it never floats somewhere confusing
@@ -301,9 +309,7 @@ enterPlacing = function(id)
 	}, workspace)
 
 	placeLabel.Text = "Placing: " .. def.Name .. "  (" .. costText(Buildings.costFor(id, 1)) .. ")"
-	placeHint.Text = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-		and "Tap the ground to aim, then press Place."
-		or "Green = free spot. Click to place, X to stop."
+	placeHint.Text = ""
 	placeBar.Visible = true
 
 	ContextActionService:BindActionAtPriority("BuilderPlace", function(_, inputState)
@@ -333,7 +339,7 @@ end
 -- Wiring
 -- ---------------------------------------------------------------------------
 
-button(gui, "BUILD  (V)", UDim2.fromOffset(145, 38), UDim2.new(1, -318, 0, 18), togglePanel)
+button(gui, "BASE  (V)", UDim2.fromOffset(145, 38), UDim2.new(1, -318, 0, 18), togglePanel)
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
@@ -349,7 +355,7 @@ actionEvent.OnClientEvent:Connect(function(message)
 	if message == "BaseRefresh" then refreshState() end
 end)
 
--- Re-colour the buttons when coins or shards change
+-- Refresh the builder after the player's resources change.
 task.spawn(function()
 	local stats = player:WaitForChild("leaderstats", 15)
 	if not stats then return end

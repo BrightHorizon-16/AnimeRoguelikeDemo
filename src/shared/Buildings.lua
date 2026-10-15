@@ -5,14 +5,14 @@
 local Buildings = {}
 
 Buildings.CellSize = 4 -- studs per grid cell
-Buildings.PlotCells = 6 -- each plot is PlotCells x PlotCells cells (24 x 24 studs)
+Buildings.PlotCells = 8 -- each home plot is 32 x 32 studs
 
--- Plots on the Builder Grounds terrace behind the Guild Hall (MinX/MinZ are world studs).
+-- Four personal home plots occupy the corners inside the main base walls.
 Buildings.Plots = {
-	{ MinX = -52, MinZ = -96 },
-	{ MinX = -24, MinZ = -96 },
-	{ MinX = 4, MinZ = -96 },
-	{ MinX = 32, MinZ = -96 },
+	{ MinX = -49, MinZ = -49 }, -- northwest
+	{ MinX = 17, MinZ = -49 }, -- northeast
+	{ MinX = -49, MinZ = 17 }, -- southwest
+	{ MinX = 17, MinZ = 17 }, -- southeast
 }
 
 Buildings.Order = { "CrystalMine", "Barracks", "Forge", "Infirmary", "BountyBoard", "Lantern", "Tree", "Statue" }
@@ -20,53 +20,59 @@ Buildings.Order = { "CrystalMine", "Barracks", "Forge", "Infirmary", "BountyBoar
 -- Costs[n] is the price of reaching level n (level 1 = the build cost).
 -- Effects[key][n] is the TOTAL bonus at level n (not per-level increments).
 Buildings.Catalog = {
+	StarterHouse = {
+		Name = "Starter Cabin", Description = "Your first home. It cannot be sold or moved.",
+		W = 2, D = 2, MaxCount = 1, MaxLevel = 1, Costs = { { Coins = 0 } },
+	},
 	CrystalMine = {
 		Name = "Crystal Mine", Description = "Mines crystals for steady coin income.",
 		W = 2, D = 2, MaxCount = 3, MaxLevel = 3,
-		Costs = { { Coins = 80 }, { Coins = 140, Shards = 2 }, { Coins = 220, Shards = 5 } },
+		Costs = { { Coins = 45, Wood = 18, Stone = 8 }, { Coins = 90, Wood = 30, Stone = 22 }, { Coins = 160, Wood = 48, Stone = 40, Shards = 4 } },
 		Effects = { IncomeBonus = { 4, 9, 15 } },
 	},
 	Barracks = {
 		Name = "Barracks", Description = "Houses more workers so more beings can earn coins.",
 		W = 2, D = 2, MaxCount = 1, MaxLevel = 3,
-		Costs = { { Coins = 100 }, { Coins = 160, Shards = 2 }, { Coins = 240, Shards = 4 } },
+		Costs = { { Coins = 60, Wood = 28, Stone = 18 }, { Coins = 100, Wood = 42, Stone = 34 }, { Coins = 160, Wood = 60, Stone = 58, Shards = 4 } },
 		Effects = { WorkerSlots = { 1, 2, 3 } },
 	},
 	Forge = {
-		Name = "Forge", Description = "Sharpens your weapons.",
+		Name = "Training Hall", Description = "Train assigned beings to increase their income.",
 		W = 2, D = 2, MaxCount = 1, MaxLevel = 3,
-		Costs = { { Coins = 90, Shards = 2 }, { Coins = 150, Shards = 4 }, { Coins = 240, Shards = 7 } },
-		Effects = { DamageBonus = { 0.10, 0.20, 0.30 } },
+		Costs = { { Coins = 55, Wood = 22, Stone = 16 }, { Coins = 90, Wood = 38, Stone = 30 }, { Coins = 150, Wood = 55, Stone = 50, Shards = 3 } },
+		Effects = { WorkerIncomeBonus = { 1, 2, 4 } },
 	},
 	Infirmary = {
-		Name = "Infirmary", Description = "Gets you back on your feet faster after a knockout.",
+		Name = "Recruitment Lodge", Description = "Reduces the price of recruiting new beings.",
 		W = 2, D = 2, MaxCount = 1, MaxLevel = 3,
-		Costs = { { Coins = 80, Shards = 1 }, { Coins = 140, Shards = 3 }, { Coins = 220, Shards = 6 } },
-		Effects = { LockReduction = { 10, 20, 30 } },
+		Costs = { { Coins = 50, Wood = 24, Stone = 12 }, { Coins = 85, Wood = 38, Stone = 24 }, { Coins = 140, Wood = 52, Stone = 42, Shards = 3 } },
+		Effects = { RecruitDiscount = { 5, 10, 15 } },
 	},
 	BountyBoard = {
-		Name = "Bounty Board", Description = "Posts bounties on Wildlings for extra coins.",
+		Name = "Market", Description = "Generates extra coins for the base each income tick.",
 		W = 2, D = 2, MaxCount = 1, MaxLevel = 3,
-		Costs = { { Coins = 70 }, { Coins = 120, Shards = 2 }, { Coins = 200, Shards = 4 } },
-		Effects = { KillCoinBonus = { 3, 6, 10 } },
+		Costs = { { Coins = 40, Wood = 16, Stone = 10 }, { Coins = 75, Wood = 28, Stone = 20 }, { Coins = 130, Wood = 40, Stone = 36, Shards = 2 } },
+		Effects = { IncomeBonus = { 3, 6, 10 } },
 	},
 	Lantern = {
 		Name = "Lantern", Description = "A warm light for your plot.", Decor = true,
-		W = 1, D = 1, MaxCount = 8, MaxLevel = 1, Costs = { { Coins = 10 } },
+		W = 1, D = 1, MaxCount = 8, MaxLevel = 1, Costs = { { Coins = 5, Wood = 4 } },
 	},
 	Tree = {
 		Name = "Garden Tree", Description = "A little greenery.", Decor = true,
-		W = 1, D = 1, MaxCount = 8, MaxLevel = 1, Costs = { { Coins = 15 } },
+		W = 1, D = 1, MaxCount = 8, MaxLevel = 1, Costs = { { Coins = 8, Wood = 6 } },
 	},
 	Statue = {
 		Name = "Hero Statue", Description = "Show off your victories.", Decor = true,
-		W = 1, D = 1, MaxCount = 4, MaxLevel = 1, Costs = { { Coins = 40 } },
+		W = 1, D = 1, MaxCount = 4, MaxLevel = 1, Costs = { { Coins = 20, Wood = 8, Stone = 8 } },
 	},
 }
 
 local EFFECT_TEXT = {
 	WorkerSlots = function(v) return "+" .. v .. (v == 1 and " worker slot" or " worker slots") end,
 	IncomeBonus = function(v) return "+" .. v .. " coins per income tick" end,
+	WorkerIncomeBonus = function(v) return "+" .. v .. " coins per assigned being per tick" end,
+	RecruitDiscount = function(v) return "-" .. v .. " coins per recruit" end,
 	DamageBonus = function(v) return "+" .. math.floor(v * 100 + 0.5) .. "% damage" end,
 	LockReduction = function(v) return "-" .. v .. "s knockout lock" end,
 	KillCoinBonus = function(v) return "+" .. v .. " coins per kill" end,
@@ -90,7 +96,7 @@ function Buildings.costFor(id, level)
 	local def = Buildings.Catalog[id]
 	if not def or type(level) ~= "number" or level < 1 or level > def.MaxLevel then return nil end
 	local cost = def.Costs[level]
-	return { Coins = cost.Coins or 0, Shards = cost.Shards or 0 }
+	return { Coins = cost.Coins or 0, Wood = cost.Wood or 0, Stone = cost.Stone or 0, Shards = cost.Shards or 0 }
 end
 
 -- Coins returned for demolishing: a fraction of all coins spent up to `level`.
@@ -110,7 +116,7 @@ end
 
 -- Sum of all bonuses from a list of { Id, Level } entries.
 function Buildings.effects(list)
-	local total = { WorkerSlots = 0, IncomeBonus = 0, DamageBonus = 0, LockReduction = 0, KillCoinBonus = 0 }
+	local total = { WorkerSlots = 0, IncomeBonus = 0, WorkerIncomeBonus = 0, RecruitDiscount = 0, DamageBonus = 0, LockReduction = 0, KillCoinBonus = 0 }
 	for _, entry in ipairs(list) do
 		local def = Buildings.Catalog[entry.Id]
 		if def and def.Effects then
@@ -132,12 +138,19 @@ local function overlaps(ax, az, aw, ad, bx, bz, bw, bd)
 end
 
 -- Can `id` be placed with its minimum corner at cell (x, z) given the buildings already there?
-function Buildings.canPlace(list, id, x, z)
+function Buildings.canPlace(list, id, x, z, plotIndex)
 	local def = type(id) == "string" and Buildings.Catalog[id] or nil
 	if not def then return false, "Unknown building." end
 	if not isInt(x) or not isInt(z) then return false, "Invalid position." end
 	local cells = Buildings.PlotCells
 	if x < 0 or z < 0 or x + def.W > cells or z + def.D > cells then return false, "That's outside your plot." end
+	if id ~= "StarterHouse" then
+		if plotIndex and plotIndex <= 2 and z + def.D > Buildings.PlotCells - 3 then
+			return false, "Keep the front area clear for your character stands."
+		elseif (not plotIndex or plotIndex >= 3) and z < 3 then
+			return false, "Keep the front area clear for your character stands."
+		end
+	end
 	if Buildings.countOf(list, id) >= def.MaxCount then
 		return false, "You can only have " .. def.MaxCount .. " " .. def.Name .. (def.MaxCount == 1 and "" or "s") .. "."
 	end
