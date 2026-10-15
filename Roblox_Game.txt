@@ -9,9 +9,9 @@ CURRENT GAME LOOP
 -----------------
 The current map is an open home area with no perimeter walls. Each player claims
 one of four plots, spawns beside a free Starter Cabin, and starts with one random
-being assigned to work. Roll more original generated beings with coins. Rarity
-affects income. Assign/unassign beings through the roster panel; each being also
-appears as a generated collectible figure on a stand at the front of the plot.
+creature assigned to work. Roll more original generated creatures with coins.
+Rarity affects income. Assign/unassign creatures through the roster panel; each
+creature appears as a modeled display on a stand at the front of the plot.
 Build and upgrade behind the stands using coins, wood, stone, and essence.
 
 The co-op combat route and ordinary resource drops are future work. The DEV menu
@@ -22,15 +22,22 @@ WHAT IS IMPLEMENTED
 - Rojo mapping for shared modules, server scripts, and client scripts.
 - Open base map: central plaza/checkpoint, paths, four personal 8x8-cell plots,
   plot signs, and a free cabin on each claimed plot.
-- Random being rolls: generated names, titles, ability, Common/Uncommon/Rare/Epic
-  rarity, and per-being income. Maximum roster size is eight.
-- Visible generated figures on stands at each player's plot; labels show name,
-  rarity, and Working/Reserve status.
-- Assigned beings produce passive coins. Roll price increases by 15 coins per
-  owned being beyond the starter.
+- Creature rolls: original toy-like Slug, Pup, Moth, Toad, Jelly, Golem,
+  Alpaca, and Mimic forms with generated names and abilities. Rarity tiers:
+  Common, Uncommon, Rare, Epic, Legendary, Mythic. Maximum roster size is eight.
+- Distinct procedural 3D creature models on plot stands; labels show name,
+  rarity, Working/Reserve status, and income.
+- Assigned creatures produce passive coins; higher rarity means higher income.
+  Roll odds: Common 55%, Uncommon 28%, Rare 12%, Epic 4%, Legendary 0.9%,
+  Mythic 0.1%. Roll price increases by 15 coins per extra creature.
 - Gather wood, stone, and essence from eight respawning resource nodes around
   the home area (E). Future mobs can add resource drops in the overworld.
 - Building placement, upgrades, demolition, material costs, and server validation.
+  A full-size hologram shows the building shape, green/red validity, and a
+  specific placement reason. Preview raycasts only target the player's plot.
+- The runtime clears stale Studio Workspace scenery/terrain, untracked sibling
+  server scripts, and StarterPack tools because those old place objects are not
+  mapped by this Rojo project.
 - Studio-only Build Pack: 5,000 coins, 500 wood, 500 stone, and 100 essence.
 - Saving/loading coins, materials, beings, learned abilities, and buildings,
   including migration from the previous fixed-character saves.
@@ -42,16 +49,15 @@ RUNNING IN ROBLOX STUDIO
 -----------------------
 In PowerShell:
   cd C:\Games\AnimeRoguelikeDemo
-  & 'C:\Games\rojo.exe' serve default.project.json
+  & 'C:\Games\rojo.exe' serve default.project.json --port 34873
 
-Keep the Rojo terminal open, connect the Studio plugin to 127.0.0.1:34872, and
+Keep the Rojo terminal open, connect the Studio plugin to 127.0.0.1:34873, and
 press Play. The map appears at runtime. The DEV button only appears during Studio
 play and only the server can apply its fixed grant pack.
 
-If Rojo says the port is in use, another Rojo server is already listening;
-connect Studio to that server or stop it before starting another. Double-clicking
-rojo.exe may open a process, but the port conflict means a listener already owns
-the address.
+Port 34872 was unavailable on this machine, so this project uses 34873. If that
+port is busy, check for another Rojo server or choose a free port and use the
+same address in both the Rojo command and Studio plugin.
 
 CONTROLS
 --------
@@ -59,17 +65,19 @@ CONTROLS
 - Gather: E near a resource node.
 - Roster: BEINGS button or N.
 - Building: BUILD BASE button or B (V alias); E or click/tap selects/places,
-  X cancels. The placement bar also has on-screen Select/Place and Done buttons.
+  X cancels. The hologram shows the full structure and why a spot is invalid.
+- A plain-text control list at the bottom left can be clicked to hide; click
+  CONTROLS [+] to reopen it. The redundant MOVE action button was removed.
 - Combat (currently without enemies): click/right-click attacks, Q dash,
-  C movement, 1/2 learned abilities, R ultimate.
+  1/2 learned abilities, R ultimate.
 
 WORK LEFT
 ---------
-- Run the current build in Studio Play and inspect cabin spawn, being figures,
+- Run the current build in Studio Play and inspect cabin spawn, creature models,
   plot layout, resource HUD, and building placement.
 - Add mob resource drops through the later overworld loop.
 - Expand co-op combat, linear world progression, and dropped resources.
-- Add more being visuals/animations, base structures, and mobile polish.
+- Add creature animations, more base structures, and mobile polish.
 - Test multiplayer and DataStore behavior in a published Studio place with API
   access enabled.
 
@@ -96,6 +104,12 @@ AUTHOR-SIGNED CHANGE HISTORY
   added E to select/place, changed gathering to E and sprinting to hold-Shift,
   kept dash on Q and its visible button, and moved roster/learned abilities to
   N and 1/2. Confirmed the active map generator contains no tutorial area.
+[Codex | 2026-10-15] Removed the MOVE HUD button; added clickable plain-text
+  controls help; filtered placement rays to the owned plot, corrected screen-ray
+  coordinates, added validity reasons and full-structure holograms. Cleared old
+  Studio Workspace terrain/scenery and StarterPack tools at runtime. Replaced
+  sphere placeholders with eight original creature models and expanded rolls
+  to six visible rarities with 55/28/12/4/0.9/0.1% odds and increasing income.
 
 Every change must be signed by its actual author as Codex or Claude. Never
 attribute one author's work to the other.

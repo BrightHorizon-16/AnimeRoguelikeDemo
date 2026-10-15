@@ -230,7 +230,7 @@ placeLabel = make("TextLabel", {
 	Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(205, 175, 255), TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
 }, placeBar)
 local placeHint = make("TextLabel", {
-	BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -230, 0, 28),
+	BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -270, 0, 28),
 	Font = Enum.Font.Gotham, Text = "", TextColor3 = Color3.new(1, 1, 1),
 	TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
 }, placeBar)
@@ -240,7 +240,7 @@ local function placeNow()
 	if ghostOk then
 		actionEvent:FireServer("Build", { Id = placing, X = ghostCell.X, Z = ghostCell.Z })
 	else
-		placeHint.Text = "Invalid placement."
+		placeHint.Text = "Move the hologram onto a green space in your plot."
 	end
 end
 
@@ -255,21 +255,24 @@ local function updateGhost()
 
 	local usingTouch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 	local screenPoint = usingTouch and (pointer or (camera.ViewportSize / 2)) or UserInputService:GetMouseLocation()
-	local ray = camera:ViewportPointToRay(screenPoint.X, screenPoint.Y)
+	local ray = camera:ScreenPointToRay(screenPoint.X, screenPoint.Y)
 	local hit = workspace:Raycast(ray.Origin, ray.Direction * 600, raycastParams)
 	if not hit then
-		ghost.Transparency = 1
+		for _, part in ipairs(ghost:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "GhostRoot" then part.Transparency = 1 end
+		end
 		ghostOk = false
+		placeHint.Text = "Aim at the highlighted plot to position the hologram."
 		return
 	end
 
 	local cellX, cellZ = Buildings.worldToCell(state.Plot, hit.Position.X, hit.Position.Z, def.W, def.D)
-	local ok = Buildings.canPlace(state.Buildings, placing, cellX, cellZ, state.Plot)
+	local ok, reason = Buildings.canPlace(state.Buildings, placing, cellX, cellZ, state.Plot)
 	if ok and not canAfford(Buildings.costFor(placing, 1)) then
 		ok = false
-		placeHint.Text = "Missing coins or building materials."
+		reason = "Missing coins or building materials."
 	elseif ok then
-		placeHint.Text = ""
+		reason = "Green = valid • click or press E to place."
 	end
 	local centerX, centerZ = Buildings.cellCenter(state.Plot, cellX, cellZ, def.W, def.D)
 	-- Keep the ghost inside the plot so it never floats somewhere confusing
@@ -278,13 +281,89 @@ local function updateGhost()
 	if clampedX ~= cellX or clampedZ ~= cellZ then
 		centerX, centerZ = Buildings.cellCenter(state.Plot, clampedX, clampedZ, def.W, def.D)
 		ok = false
+		reason = "That would cross your plot border."
 	end
 
-	ghost.Transparency = 0.5
-	ghost.Color = ok and GOOD or BAD
-	ghost.CFrame = CFrame.new(centerX, GROUND_Y + 0.25, centerZ)
+	local ghostColor = ok and GOOD or BAD
+	for _, part in ipairs(ghost:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name ~= "GhostRoot" then
+			part.Transparency = 0.48
+			part.Color = ghostColor
+		end
+	end
+	ghost:PivotTo(CFrame.new(centerX, GROUND_Y, centerZ))
 	ghostCell.X, ghostCell.Z = cellX, cellZ
 	ghostOk = ok
+	placeHint.Text = reason or "Invalid placement."
+end
+
+local function makeGhostModel(id)
+	local def = Buildings.Catalog[id]
+	local model = Instance.new("Model")
+	model.Name = "BuildHologram"
+	local root = Instance.new("Part")
+	root.Name = "GhostRoot"
+	root.Size = Vector3.new(0.1, 0.1, 0.1)
+	root.Transparency = 1
+	root.Anchored = true
+	root.CanCollide, root.CanTouch, root.CanQuery = false, false, false
+	root.Parent = model
+	model.PrimaryPart = root
+
+	local function piece(name, size, x, y, z, shape)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Size = size
+		part.CFrame = CFrame.new(x, y, z)
+		part.Anchored = true
+		part.CanCollide, part.CanTouch, part.CanQuery = false, false, false
+		part.Material = Enum.Material.Neon
+		part.Color = GOOD
+		part.Transparency = 0.48
+		if shape then part.Shape = shape end
+		part.Parent = model
+		return part
+	end
+
+	piece("Footprint", Vector3.new(def.W * Buildings.CellSize - 0.35, 0.25, def.D * Buildings.CellSize - 0.35), 0, 0.14, 0)
+	if id == "CrystalMine" then
+		piece("Mine Hut", Vector3.new(6.2, 3.0, 4.5), 0, 1.8, 0.5)
+		piece("Mine Roof", Vector3.new(7.0, 0.45, 5.3), 0, 3.55, 0.5)
+		for _, x in ipairs({ -2.2, 0, 2.2 }) do
+			piece("Crystal", Vector3.new(1.0, 2.4, 1.0), x, 1.45, -2.3, Enum.PartType.Ball)
+		end
+	elseif id == "Barracks" then
+		piece("Barracks Walls", Vector3.new(6.7, 3.8, 6.7), 0, 2.2, 0)
+		piece("Barracks Roof", Vector3.new(7.4, 0.55, 7.4), 0, 4.4, 0)
+		piece("Flag", Vector3.new(0.35, 2.2, 0.35), 2.8, 5.7, 2.8)
+	elseif id == "Forge" then
+		piece("Forge", Vector3.new(6.3, 3.0, 6.3), 0, 1.8, 0)
+		piece("Forge Top", Vector3.new(7.0, 0.5, 7.0), 0, 3.55, 0)
+		piece("Chimney", Vector3.new(1.4, 3.3, 1.4), 2.0, 5.4, 2.0)
+	elseif id == "Infirmary" then
+		piece("Healing Pool", Vector3.new(6.8, 0.55, 6.8), 0, 0.55, 0, Enum.PartType.Cylinder)
+		for _, x in ipairs({ -2.8, 2.8 }) do
+			for _, z in ipairs({ -2.8, 2.8 }) do
+				piece("Pillar", Vector3.new(0.7, 3.4, 0.7), x, 2.2, z)
+			end
+		end
+	elseif id == "BountyBoard" then
+		piece("Board Post", Vector3.new(0.45, 5.8, 0.45), -2.5, 3.0, 0)
+		piece("Board Post", Vector3.new(0.45, 5.8, 0.45), 2.5, 3.0, 0)
+		piece("Market Sign", Vector3.new(6.4, 3.0, 0.4), 0, 4.6, 0)
+	elseif id == "Lantern" then
+		piece("Lantern Post", Vector3.new(0.35, 3.7, 0.35), 0, 1.95, 0)
+		piece("Lantern", Vector3.new(1.1, 1.1, 1.1), 0, 4.2, 0, Enum.PartType.Ball)
+	elseif id == "Tree" then
+		piece("Tree Trunk", Vector3.new(0.8, 3.1, 0.8), 0, 1.7, 0)
+		piece("Tree Canopy", Vector3.new(3.8, 3.8, 3.8), 0, 4.1, 0, Enum.PartType.Ball)
+	else
+		piece("Statue Plinth", Vector3.new(2.0, 1.0, 2.0), 0, 0.8, 0)
+		piece("Statue Body", Vector3.new(1.1, 2.0, 1.0), 0, 2.3, 0)
+		piece("Statue Head", Vector3.new(1.25, 1.25, 1.25), 0, 4.0, 0, Enum.PartType.Ball)
+	end
+	model.Parent = workspace
+	return model
 end
 
 enterPlacing = function(id)
@@ -296,20 +375,18 @@ enterPlacing = function(id)
 
 	local size = Buildings.PlotCells * Buildings.CellSize
 	local plot = Buildings.Plots[state.Plot]
-	ghost = make("Part", {
-		Name = "BuildGhost", Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
-		Material = Enum.Material.Neon, Color = GOOD, Transparency = 0.5,
-		Size = Vector3.new(def.W * Buildings.CellSize, 0.5, def.D * Buildings.CellSize),
-	}, workspace)
+	local plotPad = world:WaitForChild("PlotPads"):FindFirstChild("Home Plot " .. state.Plot)
+	raycastParams.FilterDescendantsInstances = plotPad and { plotPad } or {}
+	ghost = makeGhostModel(id)
 	zone = make("Part", {
 		Name = "BuildZone", Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
-		Material = Enum.Material.Neon, Color = Color3.fromRGB(74, 207, 255), Transparency = 0.88,
-		Size = Vector3.new(size, 0.1, size),
-		CFrame = CFrame.new(plot.MinX + size / 2, GROUND_Y + 0.11, plot.MinZ + size / 2),
+		Material = Enum.Material.Neon, Color = Color3.fromRGB(74, 207, 255), Transparency = 0.94,
+		Size = Vector3.new(size, 0.08, size),
+		CFrame = CFrame.new(plot.MinX + size / 2, GROUND_Y + 0.05, plot.MinZ + size / 2),
 	}, workspace)
 
 	placeLabel.Text = "Placing: " .. def.Name .. "  (" .. costText(Buildings.costFor(id, 1)) .. ")"
-	placeHint.Text = ""
+	placeHint.Text = "Green hologram = valid placement. Aim inside your plot."
 	placeBar.Visible = true
 
 	ContextActionService:BindActionAtPriority("BuilderPlace", function(_, inputState)

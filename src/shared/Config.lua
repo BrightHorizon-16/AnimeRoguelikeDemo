@@ -23,24 +23,29 @@ Config.Characters = {
 	{ Name = "Aru", Title = "Storm Caller", Ability = "Storm Ring", Description = "Damages every enemy around you." },
 }
 
--- Modular name/title/skill pools create original placeholder beings for recruit rolls.
-Config.NameFirst = { "Ashen", "Moss", "Solar", "Dusk", "Frost", "Amber", "Rift", "Bramble", "Cinder", "Moon" }
-Config.NameLast = { "Warden", "Runner", "Seer", "Keeper", "Vanguard", "Weaver", "Scout", "Guardian", "Caller", "Blade" }
+-- Original, toy-like creature forms for the collection/roll loop.
+Config.NameFirst = { "Wobble", "Mochi", "Pickle", "Bongo", "Noodle", "Toasty", "Bloop", "Zippy", "Mallow", "Bonk" }
+Config.BeingForms = { "Slug", "Pup", "Moth", "Toad", "Jelly", "Golem", "Alpaca", "Mimic" }
 Config.Abilities = { "Cinder Rush", "Gravity Snare", "Verdant Pulse", "Nightfall", "Storm Ring", "Crystal Bloom", "Wildfire Arc", "Moonstep" }
 
 function Config.rollCharacter(random)
-	local rarityRoll = random:NextInteger(1, 100)
-	local rarity, income = "Common", 4
-	if rarityRoll > 97 then rarity, income = "Epic", 12
-	elseif rarityRoll > 85 then rarity, income = "Rare", 8
-	elseif rarityRoll > 60 then rarity, income = "Uncommon", 6 end
+	local rarityRoll = random:NextInteger(1, 10000)
+	local rarity, income
+	if rarityRoll > 9990 then rarity, income = "Mythic", 40
+	elseif rarityRoll > 9900 then rarity, income = "Legendary", 24
+	elseif rarityRoll > 9500 then rarity, income = "Epic", 14
+	elseif rarityRoll > 8300 then rarity, income = "Rare", 9
+	elseif rarityRoll > 5500 then rarity, income = "Uncommon", 6
+	else rarity, income = "Common", 4 end
+	local form = random:NextInteger(1, #Config.BeingForms)
 	return {
-		Name = Config.NameFirst[random:NextInteger(1, #Config.NameFirst)] .. " " .. Config.NameLast[random:NextInteger(1, #Config.NameLast)],
-		Title = rarity .. " Being",
+		Name = Config.NameFirst[random:NextInteger(1, #Config.NameFirst)] .. " " .. Config.BeingForms[form],
+		Title = rarity .. " Creature",
 		Ability = Config.Abilities[random:NextInteger(1, #Config.Abilities)],
-		Description = "An original " .. string.lower(rarity) .. " being.",
+		Description = "An original " .. string.lower(rarity) .. " creature. Its rarity sets its base income.",
 		Rarity = rarity,
 		Income = income,
+		Form = form,
 	}
 end
 

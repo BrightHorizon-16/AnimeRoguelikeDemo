@@ -2,6 +2,22 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - Creature collection and base placement clarity
+
+Changed
+- Removed the redundant MOVE action button. Added a plain-text controls note at bottom left that hides when clicked and can be reopened with CONTROLS [+].
+- Reworked placement preview into a full-size, multi-part hologram shaped like the selected mine, barracks, forge, lodge, market, lantern, tree, or statue. Green marks valid placement; red marks invalid placement.
+- Limited placement raycasts to the player's own plot and switched to screen-space rays for mouse/touch coordinates. The builder now explains when a location is outside the plot, reserved for creature stands, occupied, or unaffordable.
+- Cleared stale Studio Workspace parts/terrain, untracked ServerScriptService siblings, and StarterPack tools at runtime. Rojo does not map these old place objects, so they were leaving tutorial scenery and the Lantern tool on screen.
+- Added eight distinct original procedural creature forms and rarity-colored stand labels, plus rare-tier sparkle markers. Creature forms persist with saved rosters.
+- Expanded the roll pool to Common, Uncommon, Rare, Epic, Legendary, and Mythic at 55%, 28%, 12%, 4%, 0.9%, and 0.1%. Income rises by tier from 4 to 40 coins per tick; roll odds are shown in the roster.
+- Updated the handoff and player-facing controls.
+
+Verification
+- Reviewed source and ran git diff --check. Not run in Roblox Studio; verify old scenery cleanup, model appearance, roll saving, and hologram placement in Play mode.
+
+Signed: Codex
+
 ## 2026-10-15 - Builder access and familiar controls
 
 Changed

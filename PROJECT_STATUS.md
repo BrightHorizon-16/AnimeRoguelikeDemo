@@ -5,19 +5,21 @@
 
 ## Current state
 
-The active prototype is an open, unwalled base area with four personal plots. Each player starts at a small cabin on their own plot with one random being assigned as a worker. Players can roll beings, assign them to earn passive coins, and build/upgrade their plot using coins and materials. Beings appear as generated collectible figures on stands at the front of each plot.
+The active prototype is an open, unwalled base area with four personal plots. Each player starts at a small cabin on their own plot with one random creature assigned as a worker. Players can roll original toy-like creatures, assign them to earn passive coins, and build/upgrade their plot using coins and materials. Distinct procedural creature models appear on stands at the front of each plot.
 
 The outer combat route and mob resource drops are not implemented yet. Wood, stone, and essence can be gathered from respawning nodes around the home area. In Roblox Studio, the **DEV** menu also grants test resources. The server exposes and accepts grants only when `RunService:IsStudio()` is true.
 
 ## Implemented
 
 - Four plot ownership and player-specific starter cabins.
-- Procedurally rolled names, abilities, rarity, and per-being income; roster saves and loads.
-- Up to eight displayed beings per plot; assigned beings are marked as working.
+- Procedurally rolled creature names, forms, abilities, six rarity tiers, and rarity-scaled income; roster saves and loads.
+- Up to eight modeled creatures per plot; assigned creatures are marked as working.
 - Build, upgrade, and sell using coin, wood, stone, and essence costs.
 - Respawning home-area resource nodes award wood, stone, or essence through server-handled E prompts.
 - Studio-only test resource pack: 5,000 coins, 500 wood, 500 stone, 100 essence.
-- Hold-Shift sprint, prominent build-base and beings buttons, E placement selection, knockout respawn, and DataStore save/load.
+- Hold-Shift sprint, prominent build-base and creature buttons, clickable hideable controls text, E placement selection, knockout respawn, and DataStore save/load.
+- Building preview holograms show the structure silhouette, valid/invalid color, and placement reason.
+- Old Workspace scenery/terrain, untracked server scripts, and StarterPack tools are cleared at runtime because the existing Studio place is not mapped by Rojo.
 
 ## Next steps
 

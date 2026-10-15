@@ -1,6 +1,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local StarterPack = game:GetService("StarterPack")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Buildings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Buildings"))
@@ -23,6 +25,22 @@ notifyEvent.Parent = remotes
 local baseStateFunction = Instance.new("RemoteFunction")
 baseStateFunction.Name = "GetBaseState"
 baseStateFunction.Parent = remotes
+
+-- The Studio place has older tutorial scenery and a Lantern tool that Rojo does
+-- not map. This prototype builds its own runtime world and has no Tool items.
+for _, oldScriptContainer in ipairs(ServerScriptService:GetChildren()) do
+	if oldScriptContainer ~= script.Parent then
+		oldScriptContainer:Destroy()
+	end
+end
+StarterPack:ClearAllChildren()
+local terrain = workspace:FindFirstChildOfClass("Terrain")
+if terrain then terrain:Clear() end
+for _, oldObject in ipairs(workspace:GetChildren()) do
+	if oldObject ~= terrain and not oldObject:IsA("Camera") then
+		oldObject:Destroy()
+	end
+end
 
 local world = Instance.new("Folder")
 world.Name = "DemoWorld"
@@ -61,6 +79,7 @@ local function stateFor(player)
 			Description = character.Description,
 			Rarity = character.Rarity or "Common",
 			Income = character.Income or Config.WorkerIncome,
+			Form = character.Form,
 			Assigned = character.Assigned,
 		})
 	end
@@ -203,13 +222,13 @@ local function handleAction(player, action, payload)
 	if action == "Recruit" then
 		local coins = getStat(player, "Coins")
 		local recruitCost = math.max(10, Config.RecruitCost + math.max(0, #profile.roster - 1) * 15 - effectsFor(profile).RecruitDiscount)
-		if #profile.roster >= Config.MaxRosterSize then notify(player, "Your character stands are full."); return end
+		if #profile.roster >= Config.MaxRosterSize then notify(player, "Your creature stands are full."); return end
 		if not coins or coins.Value < recruitCost then notify(player, "Need " .. recruitCost .. " coins to recruit."); return end
 		coins.Value -= recruitCost
 		local newCharacter = Config.rollCharacter(random)
 		newCharacter.Assigned = false
 		table.insert(profile.roster, newCharacter)
-		notify(player, "Rolled " .. newCharacter.Rarity .. " being: " .. newCharacter.Name .. "!")
+		notify(player, "Rolled " .. newCharacter.Rarity .. " creature: " .. newCharacter.Name .. "!")
 	elseif action == "Assign" then
 		local target = type(payload) == "number" and profile.roster[payload]
 		if not target then return end
@@ -221,7 +240,7 @@ local function handleAction(player, action, payload)
 		notify(player, target.Name .. (target.Assigned and " assigned to the base." or " moved to your reserve."))
 	elseif action == "Absorb" then
 		local target = profile.roster[payload]
-		if not target or target.Assigned then notify(player, "Move that being to your reserve before absorbing it."); return end
+		if not target or target.Assigned then notify(player, "Move that creature to your reserve before absorbing it."); return end
 		if profile.learned[target.Ability] then notify(player, "You already know " .. target.Ability .. "."); return end
 		profile.learned[target.Ability] = true
 		local name = target.Name
@@ -363,6 +382,9 @@ end
 local function onCharacter(player, character)
 	local profile = profiles[player]
 	if not profile then return end
+	for _, item in ipairs(character:GetChildren()) do
+		if item:IsA("Tool") then item:Destroy() end
+	end
 	local root = character:WaitForChild("HumanoidRootPart", 10)
 	local hum = character:WaitForChild("Humanoid", 10)
 	local plot = profile.plot and Buildings.Plots[profile.plot]
@@ -394,7 +416,7 @@ local function serializeProfile(player, profile)
 	for _, character in ipairs(profile.roster) do
 		table.insert(roster, {
 			Name = character.Name, Title = character.Title, Ability = character.Ability,
-			Description = character.Description, Rarity = character.Rarity, Income = character.Income,
+			Description = character.Description, Rarity = character.Rarity, Income = character.Income, Form = character.Form,
 			Assigned = character.Assigned == true,
 		})
 	end
@@ -433,9 +455,10 @@ applySaved = function(player, profile, data)
 				character.Name = saved.Name
 				character.Title = type(saved.Title) == "string" and string.sub(saved.Title, 1, 48) or character.Title or "Generated Being"
 				character.Ability = type(saved.Ability) == "string" and string.sub(saved.Ability, 1, 48) or character.Ability or "Base Pulse"
-				character.Description = type(saved.Description) == "string" and string.sub(saved.Description, 1, 120) or character.Description or "An original generated being."
-				character.Rarity = ({ Common = true, Uncommon = true, Rare = true, Epic = true })[saved.Rarity] and saved.Rarity or character.Rarity or "Common"
+				character.Description = type(saved.Description) == "string" and string.sub(saved.Description, 1, 120) or character.Description or "An original generated creature."
+				character.Rarity = ({ Common = true, Uncommon = true, Rare = true, Epic = true, Legendary = true, Mythic = true })[saved.Rarity] and saved.Rarity or character.Rarity or "Common"
 				character.Income = type(saved.Income) == "number" and math.clamp(math.floor(saved.Income), 1, 100) or character.Income or Config.WorkerIncome
+				character.Form = type(saved.Form) == "number" and math.clamp(math.floor(saved.Form), 1, #Config.BeingForms) or character.Form
 				character.Assigned = saved.Assigned == true
 				table.insert(roster, character)
 			end
@@ -461,6 +484,14 @@ local function saveProfile(player)
 end
 
 local function onPlayer(player)
+	for _, containerName in ipairs({ "Backpack", "StarterGear" }) do
+		local container = player:FindFirstChild(containerName)
+		if container then
+			for _, item in ipairs(container:GetChildren()) do
+				if item:IsA("Tool") then item:Destroy() end
+			end
+		end
+	end
 	ensureStat(player, "Coins", 100)
 	ensureStat(player, "Shards", 0)
 	ensureStat(player, "Wood", 0)

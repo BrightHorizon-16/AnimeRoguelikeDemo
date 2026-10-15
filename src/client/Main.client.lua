@@ -44,13 +44,14 @@ stylePanel(top)
 make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(14, 5), Size=UDim2.new(1, -28, 0, 28), Font=Enum.Font.GothamBold, Text="GENERATED BEINGS  |  CO-OP PROTOTYPE", TextColor3=Color3.fromRGB(170, 225, 255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, top)
 local stats = make("TextLabel", {Name="Stats", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 36), Size=UDim2.new(1, -28, 0, 24), Font=Enum.Font.GothamMedium, Text="Loading…", TextColor3=Color3.new(1,1,1), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, top)
 
-local rosterPanel = make("Frame", {Name="BaseRoster", Size=UDim2.fromOffset(370, 340), Position=UDim2.new(0, 16, 0, 102), Visible=false}, gui)
+local rosterPanel = make("Frame", {Name="BaseRoster", Size=UDim2.fromOffset(370, 390), Position=UDim2.new(0, 16, 0, 102), Visible=false}, gui)
 stylePanel(rosterPanel)
-local rosterHeader = make("TextLabel", {Name="Header", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 8), Size=UDim2.new(1,-28,0,28), Font=Enum.Font.GothamBold, Text="BASE ROSTER  •  Assign workers or absorb abilities", TextColor3=Color3.fromRGB(170,225,255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
+local rosterHeader = make("TextLabel", {Name="Header", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 8), Size=UDim2.new(1,-28,0,28), Font=Enum.Font.GothamBold, Text="CREATURE STANDS  •  Assign workers or absorb abilities", TextColor3=Color3.fromRGB(170,225,255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
 button(rosterPanel, "×", UDim2.fromOffset(30, 28), UDim2.new(1,-40,0,7), function() rosterPanel.Visible=false end)
-local list = make("ScrollingFrame", {Name="RosterList", BackgroundTransparency=1, BorderSizePixel=0, Position=UDim2.fromOffset(10, 42), Size=UDim2.new(1,-20,1,-100), CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y, ScrollBarThickness=5}, rosterPanel)
+make("TextLabel", {Name="RollOdds", BackgroundTransparency=1, Position=UDim2.fromOffset(14,34), Size=UDim2.new(1,-28,0,24), Font=Enum.Font.Gotham, Text="ROLL ODDS  Common 55% • Uncommon 28% • Rare 12% • Epic 4% • Legendary 0.9% • Mythic 0.1%", TextColor3=Color3.fromRGB(195,205,220), TextSize=10, TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
+local list = make("ScrollingFrame", {Name="RosterList", BackgroundTransparency=1, BorderSizePixel=0, Position=UDim2.fromOffset(10, 62), Size=UDim2.new(1,-20,1,-149), CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y, ScrollBarThickness=5}, rosterPanel)
 make("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder}, list)
-local recruitButton = button(rosterPanel, "Roll Being", UDim2.new(1,-20,0,42), UDim2.new(0,10,1,-50), function() actionEvent:FireServer("Recruit") end)
+local recruitButton = button(rosterPanel, "Roll Creature", UDim2.new(1,-20,0,42), UDim2.new(0,10,1,-50), function() actionEvent:FireServer("Recruit") end)
 button(gui, "BEINGS  [N]", UDim2.fromOffset(145, 38), UDim2.new(1,-160,0,18), function() rosterPanel.Visible = not rosterPanel.Visible end)
 
 local devPanel = make("Frame", {Name="StudioDevPanel", Size=UDim2.fromOffset(310, 104), Position=UDim2.new(1,-16,0,64), AnchorPoint=Vector2.new(1,0), Visible=false}, gui)
@@ -79,9 +80,9 @@ end)
 sprintButton.AnchorPoint = Vector2.new(1, 1)
 
 local actionFrame = make("Frame", {Name="Actions", BackgroundTransparency=1, AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-18), Size=UDim2.new(0.96,0,0,54)}, gui)
-make("UIGridLayout", {CellPadding=UDim2.fromOffset(3,0), CellSize=UDim2.new(1/7,-3,1,0), FillDirection=Enum.FillDirection.Horizontal, SortOrder=Enum.SortOrder.LayoutOrder}, actionFrame)
+make("UIGridLayout", {CellPadding=UDim2.fromOffset(3,0), CellSize=UDim2.new(1/6,-3,1,0), FillDirection=Enum.FillDirection.Horizontal, SortOrder=Enum.SortOrder.LayoutOrder}, actionFrame)
 local actionButtons = {
-	{"BASIC", "Attack", "Light"}, {"HEAVY", "Attack", "Heavy"}, {"DASH  [Q]", "Dash"}, {"MOVE", "Movement"},
+	{"BASIC", "Attack", "Light"}, {"HEAVY", "Attack", "Heavy"}, {"DASH  [Q]", "Dash"},
 	{"SPECIAL 1  [1]", "Ability", 1}, {"SPECIAL 2  [2]", "Ability", 2}, {"ULTIMATE  [R]", "Ultimate"},
 }
 for i, entry in ipairs(actionButtons) do
@@ -96,6 +97,30 @@ for i, entry in ipairs(actionButtons) do
 	actionButton.LayoutOrder = i
 end
 
+local controlsOpen = true
+local controlsText = "WASD Move • SPACE Jump\nSHIFT Sprint • E Gather / Place\nB Build • N Creatures • X Cancel\nLMB Basic • RMB Heavy • Q Dash\n1 / 2 Specials • R Ultimate\nClick these notes to hide"
+local controlsPanel = make("TextButton", {
+	Name = "ControlsHelp", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -92),
+	Size = UDim2.fromOffset(310, 112), BackgroundTransparency = 1, BorderSizePixel = 0,
+	Font = Enum.Font.GothamMedium, Text = controlsText, TextColor3 = Color3.fromRGB(245, 245, 250),
+	TextSize = 13, TextStrokeTransparency = 0.45, TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Bottom, TextWrapped = true, AutoButtonColor = false,
+}, gui)
+local controlsToggle = make("TextButton", {
+	Name = "ControlsToggle", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -92),
+	Size = UDim2.fromOffset(118, 26), BackgroundTransparency = 1, BorderSizePixel = 0,
+	Font = Enum.Font.GothamBold, Text = "CONTROLS  [+]", TextColor3 = Color3.fromRGB(245, 245, 250),
+	TextSize = 14, TextStrokeTransparency = 0.35, TextXAlignment = Enum.TextXAlignment.Left,
+	Visible = false, AutoButtonColor = false,
+}, gui)
+local function toggleControls()
+	controlsOpen = not controlsOpen
+	controlsPanel.Visible = controlsOpen
+	controlsToggle.Visible = not controlsOpen
+end
+controlsPanel.Activated:Connect(toggleControls)
+controlsToggle.Activated:Connect(toggleControls)
+
 local toast = make("TextLabel", {Name="Toast", BackgroundColor3=Color3.fromRGB(20,23,32), BackgroundTransparency=0.12, AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-82), Size=UDim2.fromOffset(440,34), Font=Enum.Font.GothamSemibold, Text="", TextColor3=Color3.new(1,1,1), TextSize=14, Visible=false}, gui)
 make("UICorner", {CornerRadius=UDim.new(0,8)}, toast)
 
@@ -103,15 +128,21 @@ local function refreshRoster()
 	for _, child in ipairs(list:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
 	local state = stateFunction:InvokeServer()
 	if not state then return end
-	if state.RecruitCost then recruitButton.Text = string.format("Roll Being — %d coins", state.RecruitCost) end
+	if state.RecruitCost then recruitButton.Text = string.format("ROLL CREATURE  •  %d COINS", state.RecruitCost) end
 	devButton.Visible = state.DevMode == true
-	if state.Workers and state.WorkerSlots then rosterHeader.Text = string.format("CHARACTER STANDS  •  %d/%d workers", state.Workers, state.WorkerSlots) end
+	if state.Workers and state.WorkerSlots then rosterHeader.Text = string.format("CREATURE STANDS  •  %d/%d workers", state.Workers, state.WorkerSlots) end
+	local rarityColors = {
+		Common = Color3.fromRGB(210, 216, 224), Uncommon = Color3.fromRGB(100, 235, 150),
+		Rare = Color3.fromRGB(90, 175, 255), Epic = Color3.fromRGB(210, 115, 255),
+		Legendary = Color3.fromRGB(255, 205, 75), Mythic = Color3.fromRGB(255, 105, 155),
+	}
 	for index, character in ipairs(state.Roster) do
 		local row = make("Frame", {Size=UDim2.new(1,-5,0,94), BackgroundColor3=Color3.fromRGB(37,43,58), LayoutOrder=index}, list)
 		make("UICorner", {CornerRadius=UDim.new(0,7)}, row)
 		local status = character.Assigned and "BASE WORKER" or "RESERVE"
-		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,5), Size=UDim2.new(1,-18,0,20), Font=Enum.Font.GothamBold, Text=character.Name.."  •  "..character.Title.."  •  "..status, TextColor3=Color3.fromRGB(255,225,165), TextSize=13, TextXAlignment=Enum.TextXAlignment.Left}, row)
-		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,28), Size=UDim2.new(1,-18,0,17), Font=Enum.Font.Gotham, Text=string.format("%s • %s • +%d coins/tick", character.Rarity or "Common", character.Ability, character.Income or 5), TextColor3=Color3.new(1,1,1), TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, row)
+		local rarity = character.Rarity or "Common"
+		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,5), Size=UDim2.new(1,-18,0,20), Font=Enum.Font.GothamBold, Text=character.Name.."  •  "..character.Title.."  •  "..status, TextColor3=rarityColors[rarity] or Color3.fromRGB(255,225,165), TextSize=13, TextXAlignment=Enum.TextXAlignment.Left}, row)
+		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,28), Size=UDim2.new(1,-18,0,17), Font=Enum.Font.Gotham, Text=string.format("%s • %s • +%d coins/tick", rarity, character.Ability, character.Income or 5), TextColor3=Color3.new(1,1,1), TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, row)
 		button(row, character.Assigned and "Unassign" or "Assign", UDim2.fromOffset(92,32), UDim2.new(0,9,1,-38), function() actionEvent:FireServer("Assign", index) end)
 		button(row, "Absorb", UDim2.fromOffset(92,32), UDim2.new(0,108,1,-38), function() actionEvent:FireServer("Absorb", index) end)
 	end
@@ -158,7 +189,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		setSprintVisual(true)
 	end
 	if input.KeyCode == Enum.KeyCode.Q then actionEvent:FireServer("Dash") end
-	if input.KeyCode == Enum.KeyCode.C then actionEvent:FireServer("Movement") end
 	if input.KeyCode == Enum.KeyCode.R then actionEvent:FireServer("Ultimate") end
 	if input.KeyCode == Enum.KeyCode.N then rosterPanel.Visible = not rosterPanel.Visible end
 	if input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.Two then
