@@ -18,9 +18,12 @@ and awards a random item selected on the server. Players start with 500 test
 coins and get 10 more every 8 seconds. Hold Left Shift or Right Shift to
 sprint (16 normal / 24 sprint speed). A controls guide stays at bottom-left.
 
-The conveyor has a continuous hidden collision track under the animated treads.
-It moves the player around the loop, including across the red walkway. Items
-are still placeholders and have no gameplay effect.
+The conveyor has a dark belt, rounded corners, and 144 thin animated crosswise
+treads. It travels at 12 studs/second (twice the earlier speed) and carries the
+player around its loop. The GUI follows a compact Roblox-style layout: backpack
+button at top-left, Shop and Spin at left, coin icon and total at top-right,
+nine-slot hotbar at bottom, and discreet text-only controls in the bottom-left.
+Items are still placeholders and have no gameplay effect.
 
 RUNNING IN ROBLOX STUDIO
 -----------------------
@@ -41,6 +44,14 @@ NEXT WORK
 
 AUTHOR-SIGNED CHANGE HISTORY
 ----------------------------
+[Codex | 2026-10-15] Replaced the corner controls card with discreet plain text,
+moved the coin balance to a background-free top-right coin badge, and moved Shop
+and backpack controls to the left side. Added a nine-slot selectable hotbar and
+inventory-to-hotbar assignment. Rebuilt the belt visuals as a dark continuous
+track with 144 thin treads on rounded corners, doubled its speed, and kept
+player carry motion active. Updated the panel palette to match the reference's
+bright green, warm brown, and dark translucent UI mood.
+
 [Codex | 2026-10-15] Made the shop scrollable and expanded it to 12 goods; added
 a scrollable inventory panel with live counts and moved controls to the bottom
 left. Added continuous belt collision decking and player carry motion around

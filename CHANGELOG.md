@@ -2,6 +2,21 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - Compact HUD and smoother faster conveyor
+
+Changed
+- Reduced the controls hint to one line of unobtrusive text in the bottom-left.
+- Moved Shop and Spin to the left, added a top-left backpack button, and moved the coin total to a background-free top-right coin display.
+- Added a nine-slot hotbar with 1–9 selection and inventory assignment; the backpack opens the live-count item inventory.
+- Converted the shop to a scrollable list and kept the inventory scrollable.
+- Replaced large moving cuboids with a dark continuous belt and 144 thin crosswise tread strips following rounded corners. Doubled belt speed from 6 to 12 studs/second and retained player carry motion.
+- Warmed the UI colors toward the reference's vivid green, orange/brown, and dark translucent look.
+
+Verification
+- Reviewed source and project mapping. Not run in Roblox Studio; inspect the new HUD and belt in Play mode.
+
+Signed: Codex
+
 ## 2026-10-15 - Scrollable shop, inventory, controls, and player-moving conveyor
 
 Changed

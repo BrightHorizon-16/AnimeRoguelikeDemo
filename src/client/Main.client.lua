@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("DemoRemotes")
@@ -13,11 +14,11 @@ local shopSpin = remotes:WaitForChild("ShopSpin")
 local inventoryChanged = remotes:WaitForChild("InventoryChanged")
 
 local COLORS = {
-	panel = Color3.fromRGB(28, 34, 46),
-	panel2 = Color3.fromRGB(41, 50, 66),
+	panel = Color3.fromRGB(38, 30, 23),
+	panel2 = Color3.fromRGB(73, 51, 33),
 	blue = Color3.fromRGB(90, 163, 245),
-	green = Color3.fromRGB(90, 205, 130),
-	gold = Color3.fromRGB(255, 205, 95),
+	green = Color3.fromRGB(84, 216, 72),
+	gold = Color3.fromRGB(255, 198, 45),
 	white = Color3.fromRGB(245, 248, 255),
 	muted = Color3.fromRGB(173, 187, 205),
 }
@@ -44,6 +45,8 @@ local function text(parent, name, value, size, position, fontSize, color, font)
 	label.BackgroundTransparency = 1
 	label.Text = value
 	label.TextColor3 = color or COLORS.white
+	label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	label.TextStrokeTransparency = 0.55
 	label.TextSize = fontSize or 18
 	label.Font = font or Enum.Font.GothamMedium
 	label.TextXAlignment = Enum.TextXAlignment.Left
@@ -61,6 +64,8 @@ local function button(parent, name, value, size, position, color)
 	item.BorderSizePixel = 0
 	item.Text = value
 	item.TextColor3 = COLORS.white
+	item.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	item.TextStrokeTransparency = 0.35
 	item.TextSize = 17
 	item.Font = Enum.Font.GothamBold
 	item.AutoButtonColor = true
@@ -76,53 +81,98 @@ gui.IgnoreGuiInset = false
 gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
 
+task.spawn(function()
+	while true do
+		local ok = pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+		end)
+		if ok then break end
+		task.wait(0.25)
+	end
+end)
+
 local wallet = Instance.new("Frame")
 wallet.Name = "Wallet"
-wallet.Size = UDim2.fromOffset(220, 54)
-wallet.Position = UDim2.new(0, 18, 0, 18)
-wallet.BackgroundColor3 = COLORS.panel
-wallet.BackgroundTransparency = 0.04
+wallet.Size = UDim2.fromOffset(170, 42)
+wallet.AnchorPoint = Vector2.new(1, 0)
+wallet.Position = UDim2.new(1, -20, 0, 20)
+wallet.BackgroundTransparency = 1
 wallet.BorderSizePixel = 0
 wallet.Parent = gui
-corner(wallet, 11)
-outline(wallet, COLORS.green)
-text(wallet, "WalletIcon", "◈", UDim2.fromOffset(30, 50), UDim2.fromOffset(14, 2), 24, COLORS.gold, Enum.Font.GothamBold)
-local coinText = text(wallet, "Coins", "Coins: 500", UDim2.new(1, -56, 1, 0), UDim2.fromOffset(52, 0), 19, COLORS.white, Enum.Font.GothamBold)
+local coinIcon = Instance.new("Frame")
+coinIcon.Name = "CoinIcon"
+coinIcon.Size = UDim2.fromOffset(30, 30)
+coinIcon.Position = UDim2.fromOffset(0, 5)
+coinIcon.BackgroundColor3 = Color3.fromRGB(255, 198, 45)
+coinIcon.BorderSizePixel = 0
+coinIcon.Parent = wallet
+corner(coinIcon, 15)
+outline(coinIcon, Color3.fromRGB(80, 54, 14), 2)
+local coinGlyph = text(coinIcon, "Glyph", "$", UDim2.fromScale(1, 1), UDim2.new(), 19, Color3.fromRGB(89, 57, 9), Enum.Font.GothamBlack)
+coinGlyph.TextXAlignment = Enum.TextXAlignment.Center
+local coinText = text(wallet, "Coins", "500", UDim2.new(1, -38, 1, 0), UDim2.fromOffset(38, 0), 22, Color3.fromRGB(111, 255, 87), Enum.Font.GothamBlack)
+coinText.TextStrokeColor3 = Color3.fromRGB(14, 35, 8)
+coinText.TextStrokeTransparency = 0.1
+coinText.TextXAlignment = Enum.TextXAlignment.Right
 
-local inventoryToggle = button(gui, "InventoryToggle", "INVENTORY", UDim2.fromOffset(128, 50), UDim2.new(1, -430, 0, 20), COLORS.green)
-local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(128, 50), UDim2.new(1, -290, 0, 20), COLORS.blue)
-local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(132, 50), UDim2.new(1, -148, 0, 20), Color3.fromRGB(164, 107, 236))
+local inventoryToggle = button(gui, "InventoryToggle", "", UDim2.fromOffset(50, 50), UDim2.new(0, 18, 0, 18), COLORS.panel2)
+corner(inventoryToggle, 14)
+local backpackBody = Instance.new("Frame")
+backpackBody.Size = UDim2.fromOffset(24, 25)
+backpackBody.Position = UDim2.fromOffset(13, 16)
+backpackBody.BackgroundColor3 = Color3.fromRGB(45, 139, 247)
+backpackBody.BorderSizePixel = 0
+backpackBody.Parent = inventoryToggle
+corner(backpackBody, 6)
+local backpackTop = Instance.new("Frame")
+backpackTop.Size = UDim2.fromOffset(16, 7)
+backpackTop.Position = UDim2.fromOffset(17, 11)
+backpackTop.BackgroundColor3 = Color3.fromRGB(255, 190, 49)
+backpackTop.BorderSizePixel = 0
+backpackTop.Parent = inventoryToggle
+corner(backpackTop, 4)
+local backpackPocket = Instance.new("Frame")
+backpackPocket.Size = UDim2.fromOffset(16, 9)
+backpackPocket.Position = UDim2.fromOffset(17, 27)
+backpackPocket.BackgroundColor3 = Color3.fromRGB(27, 101, 205)
+backpackPocket.BorderSizePixel = 0
+backpackPocket.Parent = inventoryToggle
+corner(backpackPocket, 3)
+
+local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(112, 46), UDim2.new(0, 18, 0, 82), Color3.fromRGB(59, 155, 62))
+local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(112, 46), UDim2.new(0, 18, 0, 136), Color3.fromRGB(129, 81, 42))
 
 local status = Instance.new("TextLabel")
 status.Name = "Status"
 status.Size = UDim2.fromOffset(500, 42)
 status.AnchorPoint = Vector2.new(0.5, 1)
-status.Position = UDim2.new(0.5, 0, 1, -20)
-status.BackgroundColor3 = COLORS.panel
-status.BackgroundTransparency = 0.08
+status.Position = UDim2.new(0.5, 0, 1, -122)
+status.BackgroundTransparency = 1
 status.BorderSizePixel = 0
 status.TextColor3 = COLORS.white
 status.TextSize = 17
 status.Font = Enum.Font.GothamMedium
 status.Text = "Welcome to your base."
 status.Parent = gui
-corner(status, 10)
-outline(status, Color3.fromRGB(116, 135, 163), 1)
+status.TextStrokeColor3 = Color3.fromRGB(24, 24, 24)
+status.TextStrokeTransparency = 0.15
 
-local controls = Instance.new("Frame")
+local controls = Instance.new("TextLabel")
 controls.Name = "ControlsInstructions"
-controls.Size = UDim2.fromOffset(275, 76)
+controls.Size = UDim2.fromOffset(250, 38)
 controls.AnchorPoint = Vector2.new(0, 1)
 controls.Position = UDim2.new(0, 18, 1, -18)
-controls.BackgroundColor3 = COLORS.panel
-controls.BackgroundTransparency = 0.08
+controls.BackgroundTransparency = 1
 controls.BorderSizePixel = 0
+controls.Text = "WASD  Move     SHIFT  Sprint"
+controls.TextColor3 = COLORS.white
+controls.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+controls.TextStrokeTransparency = 0.2
+controls.TextSize = 13
+controls.Font = Enum.Font.GothamMedium
+controls.TextXAlignment = Enum.TextXAlignment.Left
+controls.TextYAlignment = Enum.TextYAlignment.Bottom
 controls.Parent = gui
-corner(controls, 10)
-outline(controls, Color3.fromRGB(116, 135, 163), 1)
-text(controls, "Heading", "CONTROLS", UDim2.new(1, -20, 0, 24), UDim2.fromOffset(12, 6), 14, COLORS.gold, Enum.Font.GothamBold)
-text(controls, "Movement", "WASD  Move     SHIFT  Sprint", UDim2.new(1, -20, 0, 22), UDim2.fromOffset(12, 29), 13, COLORS.white)
-text(controls, "Actions", "Use the top buttons for Shop, Spin, Inventory", UDim2.new(1, -20, 0, 20), UDim2.fromOffset(12, 51), 10, COLORS.muted)
 
 local function makePanel(name, size)
 	local panel = Instance.new("Frame")
@@ -131,12 +181,12 @@ local function makePanel(name, size)
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.53)
 	panel.BackgroundColor3 = COLORS.panel
-	panel.BackgroundTransparency = 0.02
+	panel.BackgroundTransparency = 0.12
 	panel.BorderSizePixel = 0
 	panel.Visible = false
 	panel.Parent = gui
 	corner(panel, 14)
-	outline(panel, COLORS.blue, 2)
+	outline(panel, COLORS.gold, 1.5)
 	return panel
 end
 
@@ -151,6 +201,7 @@ shopList.Position = UDim2.fromOffset(18, 94)
 shopList.Size = UDim2.new(1, -36, 0, 354)
 shopList.BackgroundTransparency = 1
 shopList.BorderSizePixel = 0
+shopList.Active = true
 shopList.ScrollBarThickness = 8
 shopList.ScrollBarImageColor3 = COLORS.blue
 shopList.ScrollingDirection = Enum.ScrollingDirection.Y
@@ -214,6 +265,7 @@ inventoryList.Position = UDim2.fromOffset(18, 94)
 inventoryList.Size = UDim2.new(1, -36, 0, 300)
 inventoryList.BackgroundTransparency = 1
 inventoryList.BorderSizePixel = 0
+inventoryList.Active = true
 inventoryList.ScrollBarThickness = 8
 inventoryList.ScrollBarImageColor3 = COLORS.green
 inventoryList.ScrollingDirection = Enum.ScrollingDirection.Y
@@ -225,6 +277,44 @@ inventoryLayout.Padding = UDim.new(0, 7)
 inventoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
 inventoryLayout.Parent = inventoryList
 
+local hotbar = Instance.new("Frame")
+hotbar.Name = "Hotbar"
+hotbar.Size = UDim2.fromOffset(562, 58)
+hotbar.AnchorPoint = Vector2.new(0.5, 1)
+hotbar.Position = UDim2.new(0.5, 0, 1, -16)
+hotbar.BackgroundTransparency = 1
+hotbar.Parent = gui
+local hotbarNames = table.create(9)
+local hotbarButtons = {}
+local selectedHotbar = 1
+
+local function redrawHotbar()
+	for index, slot in ipairs(hotbarButtons) do
+		slot.Text = tostring(index) .. "\n" .. (hotbarNames[index] or "")
+		slot.UIStroke.Color = index == selectedHotbar and COLORS.gold or Color3.fromRGB(16, 16, 16)
+		slot.UIStroke.Thickness = index == selectedHotbar and 2.5 or 1.5
+	end
+end
+
+for index = 1, 9 do
+	local slot = button(hotbar, "HotbarSlot" .. index, tostring(index), UDim2.fromOffset(58, 58), UDim2.fromOffset((index - 1) * 63, 0), COLORS.panel2)
+	slot.BackgroundTransparency = 0.18
+	slot.TextSize = 10
+	slot.TextWrapped = true
+	slot.TextYAlignment = Enum.TextYAlignment.Center
+	local stroke = Instance.new("UIStroke")
+	stroke.Name = "UIStroke"
+	stroke.Color = index == selectedHotbar and COLORS.gold or Color3.fromRGB(16, 16, 16)
+	stroke.Thickness = index == selectedHotbar and 2.5 or 1.5
+	stroke.Parent = slot
+	table.insert(hotbarButtons, slot)
+	slot.Activated:Connect(function()
+		selectedHotbar = index
+		redrawHotbar()
+		if hotbarNames[index] then status.Text = "Selected " .. hotbarNames[index] .. " (placeholder item)." end
+	end)
+end
+
 local function refreshInventory()
 	for _, child in ipairs(inventoryList:GetChildren()) do
 		if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
@@ -232,6 +322,20 @@ local function refreshInventory()
 	local folder = player:FindFirstChild("PlaceholderInventory")
 	local entries = folder and folder:GetChildren() or {}
 	table.sort(entries, function(a, b) return a.Name < b.Name end)
+	for _, entry in ipairs(entries) do
+		if entry:IsA("IntValue") then
+			local alreadyAssigned = false
+			for slotIndex = 1, 9 do
+				if hotbarNames[slotIndex] == entry.Name then alreadyAssigned = true; break end
+			end
+			if not alreadyAssigned then
+				for slotIndex = 1, 9 do
+					if not hotbarNames[slotIndex] then hotbarNames[slotIndex] = entry.Name; break end
+				end
+			end
+		end
+	end
+	redrawHotbar()
 	if #entries == 0 then
 		local empty = text(inventoryList, "Empty", "No items yet — try the Shop or Lucky Spin.", UDim2.new(1, -10, 0, 46), UDim2.new(), 15, COLORS.muted)
 		empty.BackgroundColor3 = COLORS.panel2
@@ -250,9 +354,16 @@ local function refreshInventory()
 			row.BorderSizePixel = 0
 			corner(row, 8)
 			row.Parent = inventoryList
-			text(row, "Name", entry.Name, UDim2.new(1, -90, 1, 0), UDim2.fromOffset(14, 0), 16, COLORS.white, Enum.Font.GothamBold)
-			local count = text(row, "Count", "× " .. entry.Value, UDim2.fromOffset(72, 48), UDim2.new(1, -84, 0, 0), 16, COLORS.gold, Enum.Font.GothamBold)
+			text(row, "Name", entry.Name, UDim2.new(1, -230, 1, 0), UDim2.fromOffset(14, 0), 15, COLORS.white, Enum.Font.GothamBold)
+			local count = text(row, "Count", "× " .. entry.Value, UDim2.fromOffset(50, 48), UDim2.new(1, -150, 0, 0), 15, COLORS.gold, Enum.Font.GothamBold)
 			count.TextXAlignment = Enum.TextXAlignment.Right
+			local equip = button(row, "AddToHotbar", "TO BAR", UDim2.fromOffset(82, 34), UDim2.new(1, -94, 0.5, -17), COLORS.green)
+			equip.TextSize = 12
+			equip.Activated:Connect(function()
+				hotbarNames[selectedHotbar] = entry.Name
+				redrawHotbar()
+				status.Text = entry.Name .. " assigned to hotbar slot " .. selectedHotbar .. "."
+			end)
 		end
 	end
 end
@@ -393,6 +504,20 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
 		gameAction:FireServer("Sprint", true)
+		return
+	end
+	local numberKeys = {
+		Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three,
+		Enum.KeyCode.Four, Enum.KeyCode.Five, Enum.KeyCode.Six,
+		Enum.KeyCode.Seven, Enum.KeyCode.Eight, Enum.KeyCode.Nine,
+	}
+	for slotIndex, keyCode in ipairs(numberKeys) do
+		if input.KeyCode == keyCode then
+			selectedHotbar = slotIndex
+			redrawHotbar()
+			if hotbarNames[slotIndex] then status.Text = "Selected " .. hotbarNames[slotIndex] .. " (placeholder item)." end
+			break
+		end
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
@@ -408,14 +533,107 @@ end)
 -- platform feels immediate; the resulting character motion replicates normally.
 local map = workspace:WaitForChild("GeneratedBeingsMap")
 local conveyor = map:WaitForChild("Looping Conveyor")
+local halfX, halfZ = 42, 32
+local cornerRadius = 6
+local straightX = (halfX - cornerRadius) * 2
+local straightZ = (halfZ - cornerRadius) * 2
+local arcLength = math.pi * cornerRadius / 2
+local perimeter = (straightX + straightZ) * 2 + arcLength * 4
+local beltSpeed = 12
+local beltCount = conveyor:GetAttribute("TreadCount")
+while not beltCount do
+	task.wait()
+	beltCount = conveyor:GetAttribute("TreadCount")
+end
+local function collectTreads()
+	local found = {}
+	for _, child in ipairs(conveyor:GetChildren()) do
+		if child.Name == "Moving Belt" and type(child:GetAttribute("TrackIndex")) == "number" then
+			table.insert(found, child)
+		end
+	end
+	if #found < beltCount then return nil end
+	table.sort(found, function(a, b) return a:GetAttribute("TrackIndex") < b:GetAttribute("TrackIndex") end)
+	return found
+end
+local treads = collectTreads()
+while not treads do
+	task.wait()
+	treads = collectTreads()
+end
+local conveyorEpoch = conveyor:GetAttribute("ConveyorEpoch") or workspace:GetServerTimeNow()
 local beltRayParams = RaycastParams.new()
 beltRayParams.FilterType = Enum.RaycastFilterType.Include
 beltRayParams.FilterDescendantsInstances = { conveyor }
 beltRayParams.IgnoreWater = true
-local halfX, halfZ = 42, 32
-local beltSpeed = 8
+
+local function pointOnLoop(distance)
+	distance %= perimeter
+	local function arc(centerX, centerZ, startAngle, progress)
+		local angle = startAngle + progress / cornerRadius
+		local radialX, radialZ = math.cos(angle), math.sin(angle)
+		return Vector3.new(centerX + radialX * cornerRadius, 0.36, centerZ + radialZ * cornerRadius), Vector3.new(-radialZ, 0, radialX)
+	end
+	if distance < straightX then
+		return Vector3.new(-halfX + cornerRadius + distance, 0.36, -halfZ), Vector3.new(1, 0, 0)
+	end
+	distance -= straightX
+	if distance < arcLength then return arc(halfX - cornerRadius, -halfZ + cornerRadius, -math.pi / 2, distance) end
+	distance -= arcLength
+	if distance < straightZ then
+		return Vector3.new(halfX, 0.36, -halfZ + cornerRadius + distance), Vector3.new(0, 0, 1)
+	end
+	distance -= straightZ
+	if distance < arcLength then return arc(halfX - cornerRadius, halfZ - cornerRadius, 0, distance) end
+	distance -= arcLength
+	if distance < straightX then
+		return Vector3.new(halfX - cornerRadius - distance, 0.36, halfZ), Vector3.new(-1, 0, 0)
+	end
+	distance -= straightX
+	if distance < arcLength then return arc(-halfX + cornerRadius, halfZ - cornerRadius, math.pi / 2, distance) end
+	distance -= arcLength
+	if distance < straightZ then
+		return Vector3.new(-halfX, 0.36, halfZ - cornerRadius - distance), Vector3.new(0, 0, -1)
+	end
+	distance -= straightZ
+	return arc(-halfX + cornerRadius, -halfZ + cornerRadius, math.pi, distance)
+end
+
+local function tangentAt(x, z)
+	local radius = cornerRadius
+	local centerX, centerZ
+	if x > halfX - radius and z < -halfZ + radius then
+		centerX, centerZ = halfX - radius, -halfZ + radius
+	elseif x > halfX - radius and z > halfZ - radius then
+		centerX, centerZ = halfX - radius, halfZ - radius
+	elseif x < -halfX + radius and z > halfZ - radius then
+		centerX, centerZ = -halfX + radius, halfZ - radius
+	elseif x < -halfX + radius and z < -halfZ + radius then
+		centerX, centerZ = -halfX + radius, -halfZ + radius
+	end
+	if centerX then
+		local radial = Vector2.new(x - centerX, z - centerZ)
+		if radial.Magnitude > 0 then
+			local unit = radial.Unit
+			return Vector3.new(-unit.Y, 0, unit.X)
+		end
+	end
+	if z < -halfZ + radius then return Vector3.new(1, 0, 0) end
+	if x > halfX - radius then return Vector3.new(0, 0, 1) end
+	if z > halfZ - radius then return Vector3.new(-1, 0, 0) end
+	return Vector3.new(0, 0, -1)
+end
 
 RunService.Heartbeat:Connect(function()
+	local elapsed = workspace:GetServerTimeNow() - conveyorEpoch
+	for index, tread in ipairs(treads) do
+		if tread.Parent then
+			local distance = ((index - 1) * (perimeter / beltCount) + elapsed * beltSpeed) % perimeter
+			local position, direction = pointOnLoop(distance)
+			tread.CFrame = CFrame.lookAt(position, position + direction)
+		end
+	end
+
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -423,18 +641,8 @@ RunService.Heartbeat:Connect(function()
 	local hit = workspace:Raycast(root.Position + Vector3.new(0, 1, 0), Vector3.new(0, -7, 0), beltRayParams)
 	if not hit or hit.Instance.Name ~= "Conveyor Surface" then return end
 
-	local x, z = root.Position.X, root.Position.Z
-	local edges = {
-		{ Distance = math.abs(z + halfZ), Direction = Vector3.new(1, 0, 0) },
-		{ Distance = math.abs(x - halfX), Direction = Vector3.new(0, 0, 1) },
-		{ Distance = math.abs(z - halfZ), Direction = Vector3.new(-1, 0, 0) },
-		{ Distance = math.abs(x + halfX), Direction = Vector3.new(0, 0, -1) },
-	}
-	local edge = edges[1]
-	for _, candidate in ipairs(edges) do
-		if candidate.Distance < edge.Distance then edge = candidate end
-	end
+	local direction = tangentAt(root.Position.X, root.Position.Z)
 	local walking = humanoid.MoveDirection * humanoid.WalkSpeed
 	local currentY = root.AssemblyLinearVelocity.Y
-	root.AssemblyLinearVelocity = Vector3.new(walking.X + edge.Direction.X * beltSpeed, currentY, walking.Z + edge.Direction.Z * beltSpeed)
+	root.AssemblyLinearVelocity = Vector3.new(walking.X + direction.X * beltSpeed, currentY, walking.Z + direction.Z * beltSpeed)
 end)

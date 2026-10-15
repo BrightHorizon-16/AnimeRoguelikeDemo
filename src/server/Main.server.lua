@@ -5,7 +5,6 @@ local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local StarterPack = game:GetService("StarterPack")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 -- Replace any saved prototype scenery with this clean blockout.
 local terrain = workspace:FindFirstChildOfClass("Terrain")
@@ -118,49 +117,68 @@ for _, spec in ipairs({
 	{ Vector3.new(84, 0.5, 4.5), Vector3.new(0, 0, 32) },
 	{ Vector3.new(4.5, 0.5, 64), Vector3.new(-42, 0, 0) },
 }) do
-	local deck = part(conveyor, "Conveyor Surface", spec[1], spec[2], rail, steel)
-	deck.Transparency = 1
+	local deck = part(conveyor, "Conveyor Surface", spec[1], spec[2], Color3.fromRGB(31, 35, 39), Enum.Material.SmoothPlastic)
 	deck.CanTouch = false
 end
 
 local halfX, halfZ = 42, 32
-local perimeter = 2 * ((halfX * 2) + (halfZ * 2))
-local beltCount = 30
+local cornerRadius = 6
+local straightX = (halfX - cornerRadius) * 2
+local straightZ = (halfZ - cornerRadius) * 2
+local arcLength = math.pi * cornerRadius / 2
+local perimeter = (straightX + straightZ) * 2 + arcLength * 4
+local beltCount = 144
 local beltSpacing = perimeter / beltCount
-local beltSpeed = 6
-local beltSegments = {}
+local beltSpeed = 12
 
 local function pointOnLoop(distance)
 	distance %= perimeter
-	local northLength = halfX * 2
-	local sideLength = halfZ * 2
-	local southLength = northLength
-	if distance < northLength then
-		return Vector3.new(-halfX + distance, 0.35, -halfZ), "X", 1
+	local function arc(centerX, centerZ, startAngle, progress)
+		local angle = startAngle + progress / cornerRadius
+		local radialX, radialZ = math.cos(angle), math.sin(angle)
+		return Vector3.new(centerX + radialX * cornerRadius, 0.36, centerZ + radialZ * cornerRadius), Vector3.new(-radialZ, 0, radialX)
 	end
-	distance -= northLength
-	if distance < sideLength then
-		return Vector3.new(halfX, 0.35, -halfZ + distance), "Z", 1
+	if distance < straightX then
+		return Vector3.new(-halfX + cornerRadius + distance, 0.36, -halfZ), Vector3.new(1, 0, 0)
 	end
-	distance -= sideLength
-	if distance < southLength then
-		return Vector3.new(halfX - distance, 0.35, halfZ), "X", -1
+	distance -= straightX
+	if distance < arcLength then
+		return arc(halfX - cornerRadius, -halfZ + cornerRadius, -math.pi / 2, distance)
 	end
-	distance -= southLength
-	return Vector3.new(-halfX, 0.35, halfZ - distance), "Z", -1
+	distance -= arcLength
+	if distance < straightZ then
+		return Vector3.new(halfX, 0.36, -halfZ + cornerRadius + distance), Vector3.new(0, 0, 1)
+	end
+	distance -= straightZ
+	if distance < arcLength then
+		return arc(halfX - cornerRadius, halfZ - cornerRadius, 0, distance)
+	end
+	distance -= arcLength
+	if distance < straightX then
+		return Vector3.new(halfX - cornerRadius - distance, 0.36, halfZ), Vector3.new(-1, 0, 0)
+	end
+	distance -= straightX
+	if distance < arcLength then
+		return arc(-halfX + cornerRadius, halfZ - cornerRadius, math.pi / 2, distance)
+	end
+	distance -= arcLength
+	if distance < straightZ then
+		return Vector3.new(-halfX, 0.36, halfZ - cornerRadius - distance), Vector3.new(0, 0, -1)
+	end
+	distance -= straightZ
+	return arc(-halfX + cornerRadius, -halfZ + cornerRadius, math.pi, distance)
 end
 
 for index = 1, beltCount do
-	local position, axis, direction = pointOnLoop((index - 1) * beltSpacing)
-	local size = axis == "X" and Vector3.new(beltSpacing - 0.35, 0.45, 4) or Vector3.new(4, 0.45, beltSpacing - 0.35)
-	local segment = part(conveyor, "Moving Belt", size, position, index % 2 == 0 and Color3.fromRGB(48, 56, 69) or Color3.fromRGB(66, 75, 89), steel)
-	segment:SetAttribute("TrackDistance", (index - 1) * beltSpacing)
-	segment:SetAttribute("TrackAxis", axis)
-	segment:SetAttribute("TrackDirection", direction)
+	local position, direction = pointOnLoop((index - 1) * beltSpacing)
+	local segment = part(conveyor, "Moving Belt", Vector3.new(4.1, 0.12, beltSpacing - 0.18), position, index % 2 == 0 and Color3.fromRGB(69, 75, 82) or Color3.fromRGB(89, 95, 101), Enum.Material.Metal)
+	segment:SetAttribute("TrackIndex", index)
 	segment.CanCollide = false
 	segment.CanQuery = false
-	table.insert(beltSegments, segment)
+	segment.CFrame = CFrame.lookAt(position, position + direction)
 end
+conveyor:SetAttribute("TreadCount", beltCount)
+conveyor:SetAttribute("ConveyorEpoch", workspace:GetServerTimeNow())
 
 -- The red approach path joins the conveyor loop and the shared spawn.
 part(map, "Red Approach Walkway", Vector3.new(12, 0.35, 48), Vector3.new(0, 0.2, 57), Color3.fromRGB(232, 91, 91), Enum.Material.SmoothPlastic)
@@ -301,19 +319,5 @@ Players.PlayerRemoving:Connect(function(player)
 	lastSpin[player] = nil
 end)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
-
--- Move each conveyor tile continuously around the rectangular circuit.
-RunService.Heartbeat:Connect(function(deltaTime)
-	for _, segment in ipairs(beltSegments) do
-		local distance = (segment:GetAttribute("TrackDistance") + beltSpeed * deltaTime) % perimeter
-		segment:SetAttribute("TrackDistance", distance)
-		local position, axis = pointOnLoop(distance)
-		segment.Position = position
-		local width = 4
-		segment.Size = axis == "X"
-			and Vector3.new(beltSpacing - 0.35, 0.45, width)
-			or Vector3.new(width, 0.45, beltSpacing - 0.35)
-	end
-end)
 
 print("[StarterBase] Built one large base and its moving conveyor loop.")
