@@ -2,6 +2,35 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-15 - One shared base, conveyor, shop, and spin UI
+
+Changed
+- Replaced four small plots with one larger shared starter base and exposed timber frame.
+- Added a loop of moving conveyor segments around the base, with a break in the south rail where the red path joins.
+- Added a top-level wallet, generic placeholder shop, and a 12-prize text-only spin that displays 15 cards during its animation.
+- Added server-side coin validation, shop purchase handling, inventory counts, 50-coin spin costs, and 10 passive test coins every 8 seconds.
+- Added hold-Left/Right-Shift sprint, set by the server to 24 speed (normal is 16).
+- Updated project mapping, handoff, README, and status notes. Kept all placeholder goods as text; no Blender assets are needed yet.
+
+Verification
+- Reviewed the new source and project mapping. Not run in Roblox Studio; sync on port 34873, stop Play, and press Play again to inspect.
+
+Signed: Codex
+
+## 2026-10-15 - Reset to a clean starter map
+
+Changed
+- Replaced the active prototype with a map-only blockout, as requested.
+- Added a vivid green studded field, shared red walkway, central spawn, and four open starter plots with concrete foundations, low borders, signs, and exposed timber frames. The plots have no walls.
+- Changed Rojo mapping to include only the server map script; removed the old active client UI, economy, creatures, combat, gathering, persistence, and building systems from `src`.
+- Rewrote project status and README to describe the reset while retaining the signed history in `Roblox_Game.txt` and this changelog.
+- Kept the existing documented Rojo port at 34873.
+
+Verification
+- Reviewed the project mapping and new map source. Not run in Roblox Studio; reconnect Rojo on port 34873 and press Play to inspect the blockout.
+
+Signed: Codex
+
 ## 2026-10-15 - Creature collection and base placement clarity
 
 Changed

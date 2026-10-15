@@ -1,225 +1,298 @@
+-- Compact starter UI for the shared base demo.
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-local remotes = ReplicatedStorage:WaitForChild("GameRemotes")
-local actionEvent = remotes:WaitForChild("Action")
-local stateFunction = remotes:WaitForChild("GetState")
-local notifyEvent = remotes:WaitForChild("Notify")
+local remotes = ReplicatedStorage:WaitForChild("DemoRemotes")
+local gameAction = remotes:WaitForChild("GameAction")
+local shopSpin = remotes:WaitForChild("ShopSpin")
+
+local COLORS = {
+	panel = Color3.fromRGB(28, 34, 46),
+	panel2 = Color3.fromRGB(41, 50, 66),
+	blue = Color3.fromRGB(90, 163, 245),
+	green = Color3.fromRGB(90, 205, 130),
+	gold = Color3.fromRGB(255, 205, 95),
+	white = Color3.fromRGB(245, 248, 255),
+	muted = Color3.fromRGB(173, 187, 205),
+}
+
+local function corner(instance, radius)
+	local value = Instance.new("UICorner")
+	value.CornerRadius = UDim.new(0, radius or 10)
+	value.Parent = instance
+end
+
+local function outline(instance, color, thickness)
+	local value = Instance.new("UIStroke")
+	value.Color = color or COLORS.blue
+	value.Thickness = thickness or 1.5
+	value.Transparency = 0.2
+	value.Parent = instance
+end
+
+local function text(parent, name, value, size, position, fontSize, color, font)
+	local label = Instance.new("TextLabel")
+	label.Name = name
+	label.Size = size
+	label.Position = position
+	label.BackgroundTransparency = 1
+	label.Text = value
+	label.TextColor3 = color or COLORS.white
+	label.TextSize = fontSize or 18
+	label.Font = font or Enum.Font.GothamMedium
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextYAlignment = Enum.TextYAlignment.Center
+	label.Parent = parent
+	return label
+end
+
+local function button(parent, name, value, size, position, color)
+	local item = Instance.new("TextButton")
+	item.Name = name
+	item.Size = size
+	item.Position = position
+	item.BackgroundColor3 = color or COLORS.blue
+	item.BorderSizePixel = 0
+	item.Text = value
+	item.TextColor3 = COLORS.white
+	item.TextSize = 17
+	item.Font = Enum.Font.GothamBold
+	item.AutoButtonColor = true
+	item.Parent = parent
+	corner(item, 9)
+	return item
+end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "GeneratedBeingsHUD"
+gui.Name = "StarterBaseUI"
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function make(className, props, parent)
-	local object = Instance.new(className)
-	for key, value in pairs(props) do object[key] = value end
-	object.Parent = parent
-	return object
+local wallet = Instance.new("Frame")
+wallet.Name = "Wallet"
+wallet.Size = UDim2.fromOffset(220, 54)
+wallet.Position = UDim2.new(0, 18, 0, 18)
+wallet.BackgroundColor3 = COLORS.panel
+wallet.BackgroundTransparency = 0.04
+wallet.BorderSizePixel = 0
+wallet.Parent = gui
+corner(wallet, 11)
+outline(wallet, COLORS.green)
+text(wallet, "WalletIcon", "◈", UDim2.fromOffset(30, 50), UDim2.fromOffset(14, 2), 24, COLORS.gold, Enum.Font.GothamBold)
+local coinText = text(wallet, "Coins", "Coins: 500", UDim2.new(1, -56, 1, 0), UDim2.fromOffset(52, 0), 19, COLORS.white, Enum.Font.GothamBold)
+
+local shopToggle = button(gui, "ShopToggle", "SHOP", UDim2.fromOffset(128, 50), UDim2.new(1, -288, 0, 20), COLORS.blue)
+local spinToggle = button(gui, "SpinToggle", "SPIN  ·  50", UDim2.fromOffset(142, 50), UDim2.new(1, -148, 0, 20), Color3.fromRGB(164, 107, 236))
+
+local status = Instance.new("TextLabel")
+status.Name = "Status"
+status.Size = UDim2.fromOffset(500, 42)
+status.AnchorPoint = Vector2.new(0.5, 1)
+status.Position = UDim2.new(0.5, 0, 1, -20)
+status.BackgroundColor3 = COLORS.panel
+status.BackgroundTransparency = 0.08
+status.BorderSizePixel = 0
+status.TextColor3 = COLORS.white
+status.TextSize = 17
+status.Font = Enum.Font.GothamMedium
+status.Text = "One shared base • Hold SHIFT to sprint"
+status.Parent = gui
+corner(status, 10)
+outline(status, Color3.fromRGB(116, 135, 163), 1)
+
+local function makePanel(name, size)
+	local panel = Instance.new("Frame")
+	panel.Name = name
+	panel.Size = size
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.Position = UDim2.fromScale(0.5, 0.53)
+	panel.BackgroundColor3 = COLORS.panel
+	panel.BackgroundTransparency = 0.02
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.Parent = gui
+	corner(panel, 14)
+	outline(panel, COLORS.blue, 2)
+	return panel
 end
 
-local function stylePanel(frame)
-	frame.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-	frame.BackgroundTransparency = 0.12
-	make("UICorner", {CornerRadius = UDim.new(0, 10)}, frame)
-	make("UIStroke", {Color = Color3.fromRGB(87, 175, 224), Transparency = 0.45, Thickness = 1}, frame)
-end
+local shopPanel = makePanel("ShopPanel", UDim2.fromOffset(540, 470))
+text(shopPanel, "Title", "BASE SHOP", UDim2.new(1, -80, 0, 44), UDim2.fromOffset(22, 16), 25, COLORS.white, Enum.Font.GothamBold)
+text(shopPanel, "SubTitle", "Generic placeholder gear • paid with test coins", UDim2.new(1, -44, 0, 26), UDim2.fromOffset(22, 58), 14, COLORS.muted)
+local shopClose = button(shopPanel, "Close", "×", UDim2.fromOffset(38, 38), UDim2.new(1, -52, 0, 14), COLORS.panel2)
 
-local function button(parent, text, size, position, callback)
-	local b = make("TextButton", {
-		Text = text, Size = size, Position = position,
-		BackgroundColor3 = Color3.fromRGB(52, 66, 91), TextColor3 = Color3.new(1, 1, 1),
-		TextSize = 14, Font = Enum.Font.GothamSemibold, AutoButtonColor = true,
-		TextWrapped = true,
-	}, parent)
-	make("UICorner", {CornerRadius = UDim.new(0, 7)}, b)
-	b.Activated:Connect(callback)
-	return b
-end
-
-local top = make("Frame", {Name="TopBar", Size=UDim2.fromOffset(480, 74), Position=UDim2.new(0, 16, 0, 16)}, gui)
-stylePanel(top)
-make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(14, 5), Size=UDim2.new(1, -28, 0, 28), Font=Enum.Font.GothamBold, Text="GENERATED BEINGS  |  CO-OP PROTOTYPE", TextColor3=Color3.fromRGB(170, 225, 255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, top)
-local stats = make("TextLabel", {Name="Stats", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 36), Size=UDim2.new(1, -28, 0, 24), Font=Enum.Font.GothamMedium, Text="Loading…", TextColor3=Color3.new(1,1,1), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, top)
-
-local rosterPanel = make("Frame", {Name="BaseRoster", Size=UDim2.fromOffset(370, 390), Position=UDim2.new(0, 16, 0, 102), Visible=false}, gui)
-stylePanel(rosterPanel)
-local rosterHeader = make("TextLabel", {Name="Header", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 8), Size=UDim2.new(1,-28,0,28), Font=Enum.Font.GothamBold, Text="CREATURE STANDS  •  Assign workers or absorb abilities", TextColor3=Color3.fromRGB(170,225,255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
-button(rosterPanel, "×", UDim2.fromOffset(30, 28), UDim2.new(1,-40,0,7), function() rosterPanel.Visible=false end)
-make("TextLabel", {Name="RollOdds", BackgroundTransparency=1, Position=UDim2.fromOffset(14,34), Size=UDim2.new(1,-28,0,24), Font=Enum.Font.Gotham, Text="ROLL ODDS  Common 55% • Uncommon 28% • Rare 12% • Epic 4% • Legendary 0.9% • Mythic 0.1%", TextColor3=Color3.fromRGB(195,205,220), TextSize=10, TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
-local list = make("ScrollingFrame", {Name="RosterList", BackgroundTransparency=1, BorderSizePixel=0, Position=UDim2.fromOffset(10, 62), Size=UDim2.new(1,-20,1,-149), CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y, ScrollBarThickness=5}, rosterPanel)
-make("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder}, list)
-local recruitButton = button(rosterPanel, "Roll Creature", UDim2.new(1,-20,0,42), UDim2.new(0,10,1,-50), function() actionEvent:FireServer("Recruit") end)
-button(gui, "BEINGS  [N]", UDim2.fromOffset(145, 38), UDim2.new(1,-160,0,18), function() rosterPanel.Visible = not rosterPanel.Visible end)
-
-local devPanel = make("Frame", {Name="StudioDevPanel", Size=UDim2.fromOffset(310, 104), Position=UDim2.new(1,-16,0,64), AnchorPoint=Vector2.new(1,0), Visible=false}, gui)
-stylePanel(devPanel)
-make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(12,6), Size=UDim2.new(1,-24,0,24), Font=Enum.Font.GothamBold, Text="STUDIO DEV MODE", TextColor3=Color3.fromRGB(255,205,120), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, devPanel)
-button(devPanel, "Grant 5,000 coins + building materials", UDim2.new(1,-20,0,40), UDim2.fromOffset(10,40), function()
-	actionEvent:FireServer("DevGrant", "BuildPack")
-end)
-local devButton = button(gui, "DEV", UDim2.fromOffset(64,38), UDim2.new(1,-480,0,18), function()
-	devPanel.Visible = not devPanel.Visible
-end)
-devButton.Visible = false
-
-local sprinting = false
-local sprintButton
-local function setSprintVisual(active)
-	sprinting = active
-	sprintButton.Text = sprinting and "SPRINT ON  [SHIFT]" or "SPRINT  [SHIFT]"
-	sprintButton.BackgroundColor3 = sprinting and Color3.fromRGB(46, 132, 103) or Color3.fromRGB(52, 66, 91)
-end
-sprintButton = button(gui, "SPRINT  [SHIFT]", UDim2.fromOffset(138, 46), UDim2.new(1,-16,1,-82), function()
-	sprinting = not sprinting
-	actionEvent:FireServer("Sprint", sprinting)
-	setSprintVisual(sprinting)
-end)
-sprintButton.AnchorPoint = Vector2.new(1, 1)
-
-local actionFrame = make("Frame", {Name="Actions", BackgroundTransparency=1, AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-18), Size=UDim2.new(0.96,0,0,54)}, gui)
-make("UIGridLayout", {CellPadding=UDim2.fromOffset(3,0), CellSize=UDim2.new(1/6,-3,1,0), FillDirection=Enum.FillDirection.Horizontal, SortOrder=Enum.SortOrder.LayoutOrder}, actionFrame)
-local actionButtons = {
-	{"BASIC", "Attack", "Light"}, {"HEAVY", "Attack", "Heavy"}, {"DASH  [Q]", "Dash"},
-	{"SPECIAL 1  [1]", "Ability", 1}, {"SPECIAL 2  [2]", "Ability", 2}, {"ULTIMATE  [R]", "Ultimate"},
+local shopItems = {
+	{ Name = "Health Potion", Price = 75, Description = "A classic healing item" },
+	{ Name = "Speed Coil", Price = 180, Description = "A familiar movement gadget" },
+	{ Name = "Lucky Charm", Price = 150, Description = "A shiny luck-themed trinket" },
+	{ Name = "Wood Bundle", Price = 100, Description = "Basic building supplies" },
+	{ Name = "Gem Pouch", Price = 250, Description = "A pouch of pretend gems" },
+	{ Name = "Pet Egg", Price = 300, Description = "A mystery companion egg" },
 }
-for i, entry in ipairs(actionButtons) do
-	local actionButton = button(actionFrame, entry[1], UDim2.new(1,0,1,0), UDim2.new(), function()
-		if entry[2] == "Ability" then
-			local state = stateFunction:InvokeServer()
-			if state and state.Learned[entry[3]] then actionEvent:FireServer("Ability", state.Learned[entry[3]]) end
+
+for index, item in ipairs(shopItems) do
+	local row = Instance.new("Frame")
+	row.Name = item.Name:gsub("%s", "") .. "Row"
+	row.Size = UDim2.new(1, -36, 0, 52)
+	row.Position = UDim2.fromOffset(18, 94 + (index - 1) * 58)
+	row.BackgroundColor3 = COLORS.panel2
+	row.BorderSizePixel = 0
+	row.Parent = shopPanel
+	corner(row, 8)
+	text(row, "ItemName", item.Name, UDim2.new(1, -160, 0, 24), UDim2.fromOffset(12, 4), 16, COLORS.white, Enum.Font.GothamBold)
+	text(row, "ItemDescription", item.Description, UDim2.new(1, -160, 0, 19), UDim2.fromOffset(12, 28), 12, COLORS.muted)
+	local buy = button(row, "Buy", "BUY  " .. item.Price, UDim2.fromOffset(124, 38), UDim2.new(1, -134, 0.5, -19), COLORS.green)
+	buy.TextSize = 14
+	buy.Activated:Connect(function()
+		local ok, purchased, result = pcall(function()
+			return shopSpin:InvokeServer("Shop", item.Name)
+		end)
+		if not ok then
+			status.Text = "Shop connection failed. Try again."
+		elseif purchased then
+			status.Text = result
 		else
-			actionEvent:FireServer(entry[2], entry[3])
+			status.Text = result or "Purchase failed."
 		end
 	end)
-	actionButton.LayoutOrder = i
 end
 
-local controlsOpen = true
-local controlsText = "WASD Move • SPACE Jump\nSHIFT Sprint • E Gather / Place\nB Build • N Creatures • X Cancel\nLMB Basic • RMB Heavy • Q Dash\n1 / 2 Specials • R Ultimate\nClick these notes to hide"
-local controlsPanel = make("TextButton", {
-	Name = "ControlsHelp", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -92),
-	Size = UDim2.fromOffset(310, 112), BackgroundTransparency = 1, BorderSizePixel = 0,
-	Font = Enum.Font.GothamMedium, Text = controlsText, TextColor3 = Color3.fromRGB(245, 245, 250),
-	TextSize = 13, TextStrokeTransparency = 0.45, TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Bottom, TextWrapped = true, AutoButtonColor = false,
-}, gui)
-local controlsToggle = make("TextButton", {
-	Name = "ControlsToggle", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -92),
-	Size = UDim2.fromOffset(118, 26), BackgroundTransparency = 1, BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold, Text = "CONTROLS  [+]", TextColor3 = Color3.fromRGB(245, 245, 250),
-	TextSize = 14, TextStrokeTransparency = 0.35, TextXAlignment = Enum.TextXAlignment.Left,
-	Visible = false, AutoButtonColor = false,
-}, gui)
-local function toggleControls()
-	controlsOpen = not controlsOpen
-	controlsPanel.Visible = controlsOpen
-	controlsToggle.Visible = not controlsOpen
+local spinPanel = makePanel("SpinPanel", UDim2.fromOffset(590, 330))
+text(spinPanel, "Title", "LUCKY SPIN", UDim2.new(1, -80, 0, 42), UDim2.fromOffset(22, 16), 25, COLORS.white, Enum.Font.GothamBold)
+text(spinPanel, "SubTitle", "Costs 50 test coins • 12 possible placeholder items", UDim2.new(1, -44, 0, 24), UDim2.fromOffset(22, 56), 14, COLORS.muted)
+local spinClose = button(spinPanel, "Close", "×", UDim2.fromOffset(38, 38), UDim2.new(1, -52, 0, 14), COLORS.panel2)
+
+local viewport = Instance.new("Frame")
+viewport.Name = "SpinViewport"
+viewport.ClipsDescendants = true
+viewport.Size = UDim2.new(1, -44, 0, 104)
+viewport.Position = UDim2.fromOffset(22, 96)
+viewport.BackgroundColor3 = Color3.fromRGB(18, 22, 31)
+viewport.BorderSizePixel = 0
+viewport.Parent = spinPanel
+corner(viewport, 10)
+
+local marker = Instance.new("Frame")
+marker.Name = "WinnerMarker"
+marker.Size = UDim2.new(0, 5, 1, -8)
+marker.Position = UDim2.new(0.5, -2, 0, 4)
+marker.BackgroundColor3 = COLORS.gold
+marker.BorderSizePixel = 0
+marker.ZIndex = 3
+marker.Parent = viewport
+corner(marker, 3)
+
+local strip = Instance.new("Frame")
+strip.Name = "ItemStrip"
+strip.Size = UDim2.fromOffset(2000, 84)
+strip.Position = UDim2.fromOffset(0, 10)
+strip.BackgroundTransparency = 1
+strip.Parent = viewport
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Padding = UDim.new(0, 8)
+layout.Parent = strip
+
+local spinButton = button(spinPanel, "SpinButton", "SPIN  •  50 COINS", UDim2.fromOffset(230, 48), UDim2.new(0.5, -115, 1, -68), Color3.fromRGB(164, 107, 236))
+local isSpinning = false
+local spinItems = {
+	"Health Potion", "Speed Coil", "Lucky Charm", "Wood Bundle", "Gem Pouch", "Pet Egg",
+	"Iron Sword", "Magic Wand", "Shield", "Grapple Hook", "Rainbow Trail", "Mystery Box",
+}
+
+local function playSpin(winner)
+	for _, child in ipairs(strip:GetChildren()) do
+		if child:IsA("TextLabel") then child:Destroy() end
+	end
+	strip.Position = UDim2.fromOffset(0, 10)
+	local random = Random.new()
+	for index = 1, 15 do
+		local itemName = index == 15 and winner or spinItems[random:NextInteger(1, #spinItems)]
+		local card = Instance.new("TextLabel")
+		card.Name = "SpinItem" .. index
+		card.LayoutOrder = index
+		card.Size = UDim2.fromOffset(112, 76)
+		card.BackgroundColor3 = index == 15 and Color3.fromRGB(93, 73, 45) or COLORS.panel2
+		card.BorderSizePixel = 0
+		card.Text = itemName
+		card.TextWrapped = true
+		card.TextColor3 = index == 15 and COLORS.gold or COLORS.white
+		card.TextSize = 14
+		card.Font = Enum.Font.GothamBold
+		card.Parent = strip
+		corner(card, 8)
+	end
+	-- Fifteen text cards pass the center marker; the server-selected prize stops under it.
+	local targetX = -(14 * 120 + 56 - viewport.AbsoluteSize.X / 2)
+	local tween = TweenService:Create(strip, TweenInfo.new(4.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Position = UDim2.fromOffset(targetX, 10),
+	})
+	tween:Play()
+	tween.Completed:Wait()
 end
-controlsPanel.Activated:Connect(toggleControls)
-controlsToggle.Activated:Connect(toggleControls)
 
-local toast = make("TextLabel", {Name="Toast", BackgroundColor3=Color3.fromRGB(20,23,32), BackgroundTransparency=0.12, AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-82), Size=UDim2.fromOffset(440,34), Font=Enum.Font.GothamSemibold, Text="", TextColor3=Color3.new(1,1,1), TextSize=14, Visible=false}, gui)
-make("UICorner", {CornerRadius=UDim.new(0,8)}, toast)
-
-local function refreshRoster()
-	for _, child in ipairs(list:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
-	local state = stateFunction:InvokeServer()
-	if not state then return end
-	if state.RecruitCost then recruitButton.Text = string.format("ROLL CREATURE  •  %d COINS", state.RecruitCost) end
-	devButton.Visible = state.DevMode == true
-	if state.Workers and state.WorkerSlots then rosterHeader.Text = string.format("CREATURE STANDS  •  %d/%d workers", state.Workers, state.WorkerSlots) end
-	local rarityColors = {
-		Common = Color3.fromRGB(210, 216, 224), Uncommon = Color3.fromRGB(100, 235, 150),
-		Rare = Color3.fromRGB(90, 175, 255), Epic = Color3.fromRGB(210, 115, 255),
-		Legendary = Color3.fromRGB(255, 205, 75), Mythic = Color3.fromRGB(255, 105, 155),
-	}
-	for index, character in ipairs(state.Roster) do
-		local row = make("Frame", {Size=UDim2.new(1,-5,0,94), BackgroundColor3=Color3.fromRGB(37,43,58), LayoutOrder=index}, list)
-		make("UICorner", {CornerRadius=UDim.new(0,7)}, row)
-		local status = character.Assigned and "BASE WORKER" or "RESERVE"
-		local rarity = character.Rarity or "Common"
-		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,5), Size=UDim2.new(1,-18,0,20), Font=Enum.Font.GothamBold, Text=character.Name.."  •  "..character.Title.."  •  "..status, TextColor3=rarityColors[rarity] or Color3.fromRGB(255,225,165), TextSize=13, TextXAlignment=Enum.TextXAlignment.Left}, row)
-		make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(9,28), Size=UDim2.new(1,-18,0,17), Font=Enum.Font.Gotham, Text=string.format("%s • %s • +%d coins/tick", rarity, character.Ability, character.Income or 5), TextColor3=Color3.new(1,1,1), TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, row)
-		button(row, character.Assigned and "Unassign" or "Assign", UDim2.fromOffset(92,32), UDim2.new(0,9,1,-38), function() actionEvent:FireServer("Assign", index) end)
-		button(row, "Absorb", UDim2.fromOffset(92,32), UDim2.new(0,108,1,-38), function() actionEvent:FireServer("Absorb", index) end)
+spinButton.Activated:Connect(function()
+	if isSpinning then return end
+	isSpinning = true
+	spinButton.Text = "SPINNING..."
+	spinButton.Active = false
+	local ok, success, prize = pcall(function()
+		return shopSpin:InvokeServer("Spin")
+	end)
+	if not ok then
+		status.Text = "Spin connection failed. Try again."
+	elseif not success then
+		status.Text = prize or "Spin failed."
+	else
+		playSpin(prize)
+		status.Text = "Won " .. prize .. "! Added to your placeholder inventory."
 	end
-	local skills = #state.Learned > 0 and table.concat(state.Learned, ", ") or "none"
-	local previousSkills = rosterPanel:FindFirstChild("Learned")
-	if previousSkills then previousSkills:Destroy() end
-	make("TextLabel", {Name="Learned", BackgroundTransparency=1, Position=UDim2.new(0,10,1,-79), Size=UDim2.new(1,-20,0,22), Font=Enum.Font.Gotham, Text="Absorbed abilities: "..skills, TextColor3=Color3.fromRGB(180,230,255), TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
+	spinButton.Text = "SPIN  •  50 COINS"
+	spinButton.Active = true
+	isSpinning = false
+end)
+
+local function setOpen(panel, other)
+	local opening = not panel.Visible
+	panel.Visible = opening
+	other.Visible = false
 end
 
-local function updateStats()
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if not leaderstats then return end
-	local coins, wood, stone, essence = leaderstats:FindFirstChild("Coins"), leaderstats:FindFirstChild("Wood"), leaderstats:FindFirstChild("Stone"), leaderstats:FindFirstChild("Shards")
-	if coins then stats.Text = string.format("Coins: %d   Wood: %d   Stone: %d   Essence: %d", coins.Value, wood and wood.Value or 0, stone and stone.Value or 0, essence and essence.Value or 0) end
+shopToggle.Activated:Connect(function() setOpen(shopPanel, spinPanel) end)
+spinToggle.Activated:Connect(function() setOpen(spinPanel, shopPanel) end)
+shopClose.Activated:Connect(function() shopPanel.Visible = false end)
+spinClose.Activated:Connect(function() spinPanel.Visible = false end)
+
+local function connectWallet()
+	local stats = player:WaitForChild("leaderstats", 15)
+	local coins = stats and stats:WaitForChild("Coins", 15)
+	if coins then
+		local function update() coinText.Text = "Coins: " .. tostring(coins.Value) end
+		update()
+		coins:GetPropertyChangedSignal("Value"):Connect(update)
+	end
 end
+task.spawn(connectWallet)
 
-local toastToken = 0
-notifyEvent.OnClientEvent:Connect(function(message)
-	toastToken += 1
-	local token = toastToken
-	toast.Text = message
-	toast.Visible = true
-	task.delay(3, function() if token == toastToken then toast.Visible=false end end)
-	if rosterPanel.Visible then refreshRoster() end
-end)
-actionEvent.OnClientEvent:Connect(function(message, value)
-	if message == "Refresh" then refreshRoster() end
-	if message == "SprintState" then
-		setSprintVisual(value == true)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+		gameAction:FireServer("Sprint", true)
 	end
 end)
-
-player.CharacterAdded:Connect(function()
-	setSprintVisual(false)
-end)
-
-UserInputService.InputBegan:Connect(function(input, processed)
-	if processed then return end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then actionEvent:FireServer("Attack", "Light") end
-	if input.UserInputType == Enum.UserInputType.MouseButton2 then actionEvent:FireServer("Attack", "Heavy") end
-	if input.KeyCode == Enum.KeyCode.LeftShift then
-		sprinting = true
-		actionEvent:FireServer("Sprint", true)
-		setSprintVisual(true)
-	end
-	if input.KeyCode == Enum.KeyCode.Q then actionEvent:FireServer("Dash") end
-	if input.KeyCode == Enum.KeyCode.R then actionEvent:FireServer("Ultimate") end
-	if input.KeyCode == Enum.KeyCode.N then rosterPanel.Visible = not rosterPanel.Visible end
-	if input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.Two then
-		local state = stateFunction:InvokeServer()
-		local slot = input.KeyCode == Enum.KeyCode.One and 1 or 2
-		if state and state.Learned[slot] then actionEvent:FireServer("Ability", state.Learned[slot]) end
-	end
-end)
-
 UserInputService.InputEnded:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.LeftShift then
-		sprinting = false
-		actionEvent:FireServer("Sprint", false)
-		setSprintVisual(false)
+	if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+		gameAction:FireServer("Sprint", false)
 	end
 end)
-
-local function bindStats()
-	local leaderstats = player:WaitForChild("leaderstats", 15)
-	if not leaderstats then return end
-	for _, stat in ipairs(leaderstats:GetChildren()) do stat.Changed:Connect(updateStats) end
-	leaderstats.ChildAdded:Connect(function(stat) stat.Changed:Connect(updateStats); updateStats() end)
-	updateStats()
-end
-
-task.spawn(bindStats)
-task.spawn(function()
-	while true do
-		if rosterPanel.Visible then refreshRoster() end
-		task.wait(10)
-	end
+UserInputService.WindowFocusReleased:Connect(function()
+	gameAction:FireServer("Sprint", false)
 end)
-
-refreshRoster()

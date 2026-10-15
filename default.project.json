@@ -1,13 +1,7 @@
 {
-  "name": "Generated Beings: Co-op Prototype",
+  "name": "Generated Beings: Starter Map Blockout",
   "tree": {
     "$className": "DataModel",
-    "ReplicatedStorage": {
-      "$className": "ReplicatedStorage",
-      "Shared": {
-        "$path": "src/shared"
-      }
-    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Main": {

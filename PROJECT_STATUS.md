@@ -1,45 +1,28 @@
 # Generated Beings — project status
 
-**Date:** 2026-10-15
+**Date:** 2026-10-15  
 **Folder:** `C:\Games\AnimeRoguelikeDemo`
 
 ## Current state
 
-The active prototype is an open, unwalled base area with four personal plots. Each player starts at a small cabin on their own plot with one random creature assigned as a worker. Players can roll original toy-like creatures, assign them to earn passive coins, and build/upgrade their plot using coins and materials. Distinct procedural creature models appear on stands at the front of each plot.
-
-The outer combat route and mob resource drops are not implemented yet. Wood, stone, and essence can be gathered from respawning nodes around the home area. In Roblox Studio, the **DEV** menu also grants test resources. The server exposes and accepts grants only when `RunService:IsStudio()` is true.
-
-## Implemented
-
-- Four plot ownership and player-specific starter cabins.
-- Procedurally rolled creature names, forms, abilities, six rarity tiers, and rarity-scaled income; roster saves and loads.
-- Up to eight modeled creatures per plot; assigned creatures are marked as working.
-- Build, upgrade, and sell using coin, wood, stone, and essence costs.
-- Respawning home-area resource nodes award wood, stone, or essence through server-handled E prompts.
-- Studio-only test resource pack: 5,000 coins, 500 wood, 500 stone, 100 essence.
-- Hold-Shift sprint, prominent build-base and creature buttons, clickable hideable controls text, E placement selection, knockout respawn, and DataStore save/load.
-- Building preview holograms show the structure silhouette, valid/invalid color, and placement reason.
-- Old Workspace scenery/terrain, untracked server scripts, and StarterPack tools are cleared at runtime because the existing Studio place is not mapped by Rojo.
-
-## Next steps
-
-1. Open Studio, sync from Rojo, and review cabin spawn points, figure stands, and building placement.
-2. Adjust layout based on Studio feedback.
-3. Add mob resource drops, then expand co-op combat and the linear overworld.
-5. Test multiplayer and saving in a published Studio place with API access enabled.
+- One large shared, wall-free starter base with timber frame and entry sign.
+- Bright green studded field, red approach path, and spawn plaza.
+- Animated conveyor belt segments continuously circulate around the base; the south rail has an opening at the path.
+- Shop and spin panels use text-only placeholder items. Spin costs 50 test coins, cycles through 15 cards, and the server selects and awards one of 12 possible items.
+- Players start with 500 coins and earn 10 placeholder coins every 8 seconds. Purchases and spin rewards are counted in `PlaceholderInventory`.
+- Hold Left Shift or Right Shift to sprint. Server sets normal speed to 16 and sprint speed to 24.
 
 ## Source map
 
-- `src/shared/Config.lua` — being roll pools, rarity, economy, movement.
-- `src/shared/Buildings.lua` — costs, effects, plot layout, placement rules.
-- `src/server/Main.server.lua` — roster rolls, income, sprint, dev grant validation, combat, saving.
-- `src/server/WorldBuilder.lua` — open base map, checkpoint, plot pads, paths.
-- `src/server/BaseManager.lua` — plot ownership, stand display models, construction validation.
-- `src/server/BuildingModels.lua` and `PartKit.lua` — procedural structure and stand models.
-- `src/client/Main.client.lua` — roster, resource HUD, Studio dev menu, sprint, combat controls.
-- `src/client/BuildMode.client.lua` — construction panel and placement preview.
-- `src/server/PlayerData.lua` — DataStore wrapper.
+- `default.project.json` maps `src/server` into ServerScriptService and `src/client` into StarterPlayerScripts.
+- `src/server/Main.server.lua` resets old Workspace scenery, builds the map and conveyor, handles sprint, coins, shop validation, and server-picked spin rewards.
+- `src/client/Main.client.lua` builds the wallet, shop, spin animation, notifications, and Shift input.
+- `Roblox_Game.txt` and `CHANGELOG.md` keep signed project history.
 
-## Author-signed history
+## Next steps
 
-Claude's earlier base, building, and saving work is preserved in `CHANGELOG.md`. The newest work is recorded there as **Codex**. See `Roblox_Game.txt` for the handoff and consolidated history.
+1. Sync through Rojo on port 34873, stop Play, and press Play again to review the map and UI.
+2. Tune the base/conveyor dimensions and UI layout from Studio feedback.
+3. Add real placeholder item behavior, then base-building upgrades and the wider co-op loop.
+
+No Blender models are needed for this blockout; the base and UI use Roblox parts and text.

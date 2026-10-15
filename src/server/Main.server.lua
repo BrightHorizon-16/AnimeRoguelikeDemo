@@ -1,643 +1,295 @@
+-- Shared starter-base demo: one open base, a moving conveyor loop, soft-currency
+-- shop/spins, and server-controlled Shift sprint.
+
 local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local StarterPack = game:GetService("StarterPack")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local StarterPack = game:GetService("StarterPack")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
-local Buildings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Buildings"))
-local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
-local BaseManager = require(script.Parent:WaitForChild("BaseManager"))
-local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-
-local remotes = Instance.new("Folder")
-remotes.Name = "GameRemotes"
-remotes.Parent = ReplicatedStorage
-local actionEvent = Instance.new("RemoteEvent")
-actionEvent.Name = "Action"
-actionEvent.Parent = remotes
-local stateFunction = Instance.new("RemoteFunction")
-stateFunction.Name = "GetState"
-stateFunction.Parent = remotes
-local notifyEvent = Instance.new("RemoteEvent")
-notifyEvent.Name = "Notify"
-notifyEvent.Parent = remotes
-local baseStateFunction = Instance.new("RemoteFunction")
-baseStateFunction.Name = "GetBaseState"
-baseStateFunction.Parent = remotes
-
--- The Studio place has older tutorial scenery and a Lantern tool that Rojo does
--- not map. This prototype builds its own runtime world and has no Tool items.
-for _, oldScriptContainer in ipairs(ServerScriptService:GetChildren()) do
-	if oldScriptContainer ~= script.Parent then
-		oldScriptContainer:Destroy()
-	end
-end
-StarterPack:ClearAllChildren()
+-- Replace any saved prototype scenery with this clean blockout.
 local terrain = workspace:FindFirstChildOfClass("Terrain")
 if terrain then terrain:Clear() end
 for _, oldObject in ipairs(workspace:GetChildren()) do
-	if oldObject ~= terrain and not oldObject:IsA("Camera") then
-		oldObject:Destroy()
+	if oldObject ~= terrain and not oldObject:IsA("Camera") then oldObject:Destroy() end
+end
+StarterPack:ClearAllChildren()
+
+local oldRemotes = ReplicatedStorage:FindFirstChild("DemoRemotes")
+if oldRemotes then oldRemotes:Destroy() end
+local remotes = Instance.new("Folder")
+remotes.Name = "DemoRemotes"
+remotes.Parent = ReplicatedStorage
+
+local gameAction = Instance.new("RemoteEvent")
+gameAction.Name = "GameAction"
+gameAction.Parent = remotes
+local shopSpin = Instance.new("RemoteFunction")
+shopSpin.Name = "ShopSpin"
+shopSpin.Parent = remotes
+
+local map = Instance.new("Folder")
+map.Name = "GeneratedBeingsMap"
+map.Parent = workspace
+
+local function part(parent, name, size, position, color, material, topSurface)
+	local item = Instance.new("Part")
+	item.Name = name
+	item.Size = size
+	item.Position = position
+	item.Anchored = true
+	item.TopSurface = topSurface or Enum.SurfaceType.Smooth
+	item.BottomSurface = Enum.SurfaceType.Smooth
+	item.Material = material or Enum.Material.SmoothPlastic
+	item.Color = color
+	item.Parent = parent
+	return item
+end
+
+local function labelSign(board, title, subtitle)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "BaseLabel"
+	gui.Face = Enum.NormalId.Front
+	gui.CanvasSize = Vector2.new(700, 240)
+	gui.Parent = board
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundColor3 = Color3.fromRGB(111, 68, 42)
+	text.BackgroundTransparency = 0.04
+	text.TextColor3 = Color3.fromRGB(255, 242, 211)
+	text.TextStrokeTransparency = 0.5
+	text.Font = Enum.Font.GothamBold
+	text.TextScaled = true
+	text.TextWrapped = true
+	text.Text = title .. "\n" .. subtitle
+	text.Parent = gui
+end
+
+-- Bright green studded field inspired by the reference image.
+local grass = Color3.fromRGB(77, 205, 91)
+for x = -7, 6 do
+for z = -6, 5 do
+		part(map, "Grass Tile", Vector3.new(16, 2, 16), Vector3.new(x * 16 + 8, -1, z * 16 + 8), grass, Enum.Material.Plastic, Enum.SurfaceType.Studs)
 	end
 end
 
-local world = Instance.new("Folder")
-world.Name = "DemoWorld"
-world.Parent = workspace
-local enemies = Instance.new("Folder")
-enemies.Name = "Enemies"
-enemies.Parent = world
+-- One large open base: a proper foundation and timber frame, ready for later
+-- wall/floor upgrades while remaining easy to walk through in this first pass.
+local base = Instance.new("Model")
+base.Name = "Shared Starter Base"
+base.Parent = map
+part(base, "Base Foundation", Vector3.new(64, 1, 50), Vector3.new(0, 0.55, 0), Color3.fromRGB(206, 202, 188), Enum.Material.Concrete)
 
-local profiles = {}
-local cooldowns = {}
+local wood = Color3.fromRGB(135, 91, 56)
+for _, x in ipairs({ -28, 28 }) do
+	for _, z in ipairs({ -21, 21 }) do
+		part(base, "Frame Post", Vector3.new(1.6, 9, 1.6), Vector3.new(x, 5.5, z), wood, Enum.Material.Wood)
+	end
+end
+part(base, "Front Frame Beam", Vector3.new(58, 1.4, 1.6), Vector3.new(0, 10.2, -21), wood, Enum.Material.Wood)
+part(base, "Back Frame Beam", Vector3.new(58, 1.4, 1.6), Vector3.new(0, 10.2, 21), wood, Enum.Material.Wood)
+part(base, "Left Frame Beam", Vector3.new(1.6, 1.4, 42), Vector3.new(-28, 10.2, 0), wood, Enum.Material.Wood)
+part(base, "Right Frame Beam", Vector3.new(1.6, 1.4, 42), Vector3.new(28, 10.2, 0), wood, Enum.Material.Wood)
+
+part(base, "Base Signpost", Vector3.new(1, 6, 1), Vector3.new(0, 3.5, 27), wood, Enum.Material.Wood)
+local sign = part(base, "Base Sign", Vector3.new(20, 5, 0.8), Vector3.new(0, 7.3, 27), Color3.fromRGB(111, 68, 42), Enum.Material.Wood)
+labelSign(sign, "YOUR BASE", "Shared starter plot")
+
+-- Four rails define a rectangular conveyor circuit around the base.
+local conveyor = Instance.new("Folder")
+conveyor.Name = "Looping Conveyor"
+conveyor.Parent = map
+local rail = Color3.fromRGB(76, 86, 103)
+local steel = Enum.Material.Metal
+part(conveyor, "Outer Rail North", Vector3.new(90, 1.5, 1), Vector3.new(0, 1.0, -35), rail, steel)
+part(conveyor, "Outer Rail South Left", Vector3.new(38, 1.5, 1), Vector3.new(-26, 1.0, 35), rail, steel)
+part(conveyor, "Outer Rail South Right", Vector3.new(38, 1.5, 1), Vector3.new(26, 1.0, 35), rail, steel)
+part(conveyor, "Outer Rail West", Vector3.new(1, 1.5, 70), Vector3.new(-45, 1.0, 0), rail, steel)
+part(conveyor, "Outer Rail East", Vector3.new(1, 1.5, 70), Vector3.new(45, 1.0, 0), rail, steel)
+
+local halfX, halfZ = 42, 32
+local perimeter = 2 * ((halfX * 2) + (halfZ * 2))
+local beltCount = 30
+local beltSpacing = perimeter / beltCount
+local beltSpeed = 6
+local beltSegments = {}
+
+local function pointOnLoop(distance)
+	distance %= perimeter
+	local northLength = halfX * 2
+	local sideLength = halfZ * 2
+	local southLength = northLength
+	if distance < northLength then
+		return Vector3.new(-halfX + distance, 0.35, -halfZ), "X", 1
+	end
+	distance -= northLength
+	if distance < sideLength then
+		return Vector3.new(halfX, 0.35, -halfZ + distance), "Z", 1
+	end
+	distance -= sideLength
+	if distance < southLength then
+		return Vector3.new(halfX - distance, 0.35, halfZ), "X", -1
+	end
+	distance -= southLength
+	return Vector3.new(-halfX, 0.35, halfZ - distance), "Z", -1
+end
+
+for index = 1, beltCount do
+	local position, axis, direction = pointOnLoop((index - 1) * beltSpacing)
+	local size = axis == "X" and Vector3.new(beltSpacing - 0.35, 0.45, 4) or Vector3.new(4, 0.45, beltSpacing - 0.35)
+	local segment = part(conveyor, "Moving Belt", size, position, index % 2 == 0 and Color3.fromRGB(48, 56, 69) or Color3.fromRGB(66, 75, 89), steel)
+	segment:SetAttribute("TrackDistance", (index - 1) * beltSpacing)
+	segment:SetAttribute("TrackAxis", axis)
+	segment:SetAttribute("TrackDirection", direction)
+	segment.CanCollide = false
+	table.insert(beltSegments, segment)
+end
+
+-- The red approach path joins the conveyor loop and the shared spawn.
+part(map, "Red Approach Walkway", Vector3.new(12, 0.35, 44), Vector3.new(0, 0.2, 57), Color3.fromRGB(232, 91, 91), Enum.Material.SmoothPlastic)
+part(map, "Spawn Plaza", Vector3.new(24, 0.5, 18), Vector3.new(0, 0.25, 82), Color3.fromRGB(235, 232, 218), Enum.Material.Concrete)
+local spawn = Instance.new("SpawnLocation")
+spawn.Name = "Shared Spawn"
+spawn.Size = Vector3.new(8, 1, 8)
+spawn.Position = Vector3.new(0, 1, 82)
+spawn.Anchored = true
+spawn.Neutral = true
+spawn.Duration = 0
+spawn.Color = Color3.fromRGB(255, 235, 145)
+spawn.Material = Enum.Material.Neon
+spawn.Parent = map
+
+Lighting.ClockTime = 13.5
+Lighting.Brightness = 2
+Lighting.Ambient = Color3.fromRGB(150, 167, 175)
+Lighting.OutdoorAmbient = Color3.fromRGB(180, 195, 200)
+Lighting.FogEnd = 1000
+
 local random = Random.new()
+local stock = {
+	{ Name = "Health Potion", Price = 75 },
+	{ Name = "Speed Coil", Price = 180 },
+	{ Name = "Lucky Charm", Price = 150 },
+	{ Name = "Wood Bundle", Price = 100 },
+	{ Name = "Gem Pouch", Price = 250 },
+	{ Name = "Pet Egg", Price = 300 },
+}
+local prizePool = {
+	"Health Potion", "Speed Coil", "Lucky Charm", "Wood Bundle", "Gem Pouch", "Pet Egg",
+	"Iron Sword", "Magic Wand", "Shield", "Grapple Hook", "Rainbow Trail", "Mystery Box",
+}
+local lastSpin = {}
 
-local function ensureStat(player, name, initial)
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if not leaderstats then
-		leaderstats = Instance.new("Folder")
-		leaderstats.Name = "leaderstats"
-		leaderstats.Parent = player
+local function inventoryFor(player)
+	local inventory = player:FindFirstChild("PlaceholderInventory")
+	if not inventory then
+		inventory = Instance.new("Folder")
+		inventory.Name = "PlaceholderInventory"
+		inventory.Parent = player
 	end
-	local stat = Instance.new("IntValue")
-	stat.Name = name
-	stat.Value = initial
-	stat.Parent = leaderstats
-	return stat
+	return inventory
 end
 
-local function stateFor(player)
-	local profile = profiles[player]
-	if not profile then return nil end
-	local roster = {}
-	for _, character in ipairs(profile.roster) do
-		table.insert(roster, {
-			Name = character.Name,
-			Title = character.Title,
-			Ability = character.Ability,
-			Description = character.Description,
-			Rarity = character.Rarity or "Common",
-			Income = character.Income or Config.WorkerIncome,
-			Form = character.Form,
-			Assigned = character.Assigned,
-		})
+local function addInventoryItem(player, itemName)
+	local inventory = inventoryFor(player)
+	local count = inventory:FindFirstChild(itemName)
+	if not count then
+		count = Instance.new("IntValue")
+		count.Name = itemName
+		count.Value = 0
+		count.Parent = inventory
 	end
-	local learned = {}
-	for ability in pairs(profile.learned) do table.insert(learned, ability) end
-	table.sort(learned)
-	local workers = 0
-	for _, character in ipairs(profile.roster) do if character.Assigned then workers += 1 end end
-	local bonusSlots = profile.effects and profile.effects.WorkerSlots or 0
-	return {
-		Roster = roster,
-		Learned = learned,
-		RecruitCost = math.max(10, Config.RecruitCost + math.max(0, #profile.roster - 1) * 15 - (profile.effects and profile.effects.RecruitDiscount or 0)),
-		DevMode = RunService:IsStudio(),
-		LockSeconds = math.max(0, math.ceil((profile.lockUntil or 0) - os.clock())),
-		Workers = workers,
-		WorkerSlots = Config.BaseWorkerSlots + bonusSlots,
-	}
+	count.Value += 1
 end
 
-stateFunction.OnServerInvoke = function(player)
-	return stateFor(player)
-end
-
-local function notify(player, text)
-	notifyEvent:FireClient(player, text)
-end
-
-local function getStat(player, name)
+local function getCoins(player)
 	local stats = player:FindFirstChild("leaderstats")
-	return stats and stats:FindFirstChild(name)
+	return stats and stats:FindFirstChild("Coins")
 end
 
-local function addStat(player, name, amount)
-	local stat = getStat(player, name)
-	if stat then stat.Value += amount end
-end
-
--- Bonuses from the player's buildings (see Buildings.lua and BaseManager.lua)
-local function effectsFor(profile)
-	return profile.effects or Buildings.effects(profile.buildings or {})
-end
-
-local function countWorkers(profile)
-	local workers = 0
-	for _, character in ipairs(profile.roster) do if character.Assigned then workers += 1 end end
-	return workers
-end
-
-local function workerSlots(profile)
-	return Config.BaseWorkerSlots + effectsFor(profile).WorkerSlots
-end
-
-local function lockSeconds(profile)
-	return math.max(Config.MinKnockoutLockSeconds, Config.KnockoutLockSeconds - effectsFor(profile).LockReduction)
-end
-
--- Called after buildings change: if slots shrank (e.g. a Barracks was demolished), stand extra workers down.
-local function enforceWorkerCap(player)
-	local profile = profiles[player]
-	if not profile then return end
-	local slots = workerSlots(profile)
-	local workers = 0
-	for _, character in ipairs(profile.roster) do
-		if character.Assigned then
-			workers += 1
-			if workers > slots then
-				character.Assigned = false
-				notify(player, character.Name .. " moved to reserve - not enough worker slots.")
+shopSpin.OnServerInvoke = function(player, action, itemName)
+	local coins = getCoins(player)
+	if not coins then return false, "Your wallet is still loading." end
+	if action == "Shop" then
+		for _, item in ipairs(stock) do
+			if item.Name == itemName then
+				if coins.Value < item.Price then return false, "Not enough coins." end
+				coins.Value -= item.Price
+				addInventoryItem(player, item.Name)
+				return true, "Bought " .. item.Name .. ". It is a placeholder item for now."
 			end
 		end
+		return false, "That item is not in the shop."
+	elseif action == "Spin" then
+		local now = os.clock()
+		if lastSpin[player] and now - lastSpin[player] < 1 then return false, "Wait a moment before spinning again." end
+		lastSpin[player] = now
+		local price = 50
+		if coins.Value < price then return false, "You need 50 coins to spin." end
+		coins.Value -= price
+		local prize = prizePool[random:NextInteger(1, #prizePool)]
+		addInventoryItem(player, prize)
+		return true, prize
 	end
-	actionEvent:FireClient(player, "Refresh")
+	return false, "Unknown action."
 end
 
-local function getRoot(character)
-	return character and character:FindFirstChild("HumanoidRootPart")
-end
-
-local function taggedHumanoid(model)
-	return model and model:FindFirstChildOfClass("Humanoid")
-end
-
-local function enemyTarget(root, radius)
-	local best, bestDistance
-	for _, model in ipairs(enemies:GetChildren()) do
-		local hum = taggedHumanoid(model)
-		local targetRoot = getRoot(model)
-		if hum and hum.Health > 0 and targetRoot then
-			local distance = (targetRoot.Position - root.Position).Magnitude
-			if distance <= radius and (not bestDistance or distance < bestDistance) then
-				best, bestDistance = model, distance
-			end
-		end
-	end
-	return best
-end
-
-local function damageEnemy(player, model, amount)
-	local hum = taggedHumanoid(model)
-	if not hum or hum.Health <= 0 then return end
-	local profile = profiles[player]
-	if profile then amount = math.max(1, math.floor(amount * (1 + effectsFor(profile).DamageBonus) + 0.5)) end
-	local credit = hum:FindFirstChild("LastHitBy") or Instance.new("ObjectValue")
-	credit.Name = "LastHitBy"
-	credit.Value = player
-	credit.Parent = hum
-	hum:TakeDamage(amount)
-end
-
-local function useAbility(player, abilityName)
-	local profile = profiles[player]
+local function setSprint(player, enabled)
+	if typeof(enabled) ~= "boolean" then return end
 	local character = player.Character
-	local root = getRoot(character)
-	if not profile or not root or not profile.learned[abilityName] then return end
-	local key = player.UserId .. ":" .. abilityName
-	if cooldowns[key] and os.clock() < cooldowns[key] then return end
-	cooldowns[key] = os.clock() + 8
-	local radius = 20
-	local count = 0
-	for _, model in ipairs(enemies:GetChildren()) do
-		local targetRoot = getRoot(model)
-		local hum = taggedHumanoid(model)
-		if targetRoot and hum and hum.Health > 0 and (targetRoot.Position - root.Position).Magnitude <= radius then
-			damageEnemy(player, model, 45)
-			count += 1
-		end
-	end
-	if abilityName == "Verdant Pulse" then
-		local hum = taggedHumanoid(character)
-		if hum then hum.Health = math.min(hum.MaxHealth, hum.Health + 35) end
-	end
-	notify(player, abilityName .. " hit " .. count .. " enemies")
-end
-
-local function handleAction(player, action, payload)
-	local profile = profiles[player]
-	if not profile then return end
-	if BaseManager.handleAction(player, action, payload) then return end
-	if action == "Recruit" then
-		local coins = getStat(player, "Coins")
-		local recruitCost = math.max(10, Config.RecruitCost + math.max(0, #profile.roster - 1) * 15 - effectsFor(profile).RecruitDiscount)
-		if #profile.roster >= Config.MaxRosterSize then notify(player, "Your creature stands are full."); return end
-		if not coins or coins.Value < recruitCost then notify(player, "Need " .. recruitCost .. " coins to recruit."); return end
-		coins.Value -= recruitCost
-		local newCharacter = Config.rollCharacter(random)
-		newCharacter.Assigned = false
-		table.insert(profile.roster, newCharacter)
-		notify(player, "Rolled " .. newCharacter.Rarity .. " creature: " .. newCharacter.Name .. "!")
-	elseif action == "Assign" then
-		local target = type(payload) == "number" and profile.roster[payload]
-		if not target then return end
-		if not target.Assigned and countWorkers(profile) >= workerSlots(profile) then
-			notify(player, "No free worker slots - build or upgrade a Barracks on your plot.")
-			return
-		end
-		target.Assigned = not target.Assigned
-		notify(player, target.Name .. (target.Assigned and " assigned to the base." or " moved to your reserve."))
-	elseif action == "Absorb" then
-		local target = profile.roster[payload]
-		if not target or target.Assigned then notify(player, "Move that creature to your reserve before absorbing it."); return end
-		if profile.learned[target.Ability] then notify(player, "You already know " .. target.Ability .. "."); return end
-		profile.learned[target.Ability] = true
-		local name = target.Name
-		table.remove(profile.roster, payload)
-		notify(player, name .. " was absorbed. " .. target.Ability .. " is now yours.")
-	elseif action == "Sprint" then
-		local hum = taggedHumanoid(player.Character)
-		if not hum or hum.Health <= 0 or type(payload) ~= "boolean" then return end
-		profile.sprinting = payload
-		hum.WalkSpeed = payload and Config.SprintSpeed or Config.WalkSpeed
-		actionEvent:FireClient(player, "SprintState", payload)
-	elseif action == "DevGrant" then
-		if not RunService:IsStudio() or payload ~= "BuildPack" then return end
-		addStat(player, "Coins", 5000)
-		addStat(player, "Wood", 500)
-		addStat(player, "Stone", 500)
-		addStat(player, "Shards", 100)
-		notify(player, "Studio test pack added: 5,000 coins, 500 wood, 500 stone, 100 essence.")
-	elseif action == "Attack" then
-		local root = getRoot(player.Character)
-		if not root then return end
-		local attackType = payload == "Heavy" and "Heavy" or "Light"
-		local key = player.UserId .. ":Attack:" .. attackType
-		local waitTime = attackType == "Heavy" and 0.9 or 0.35
-		if cooldowns[key] and os.clock() < cooldowns[key] then return end
-		cooldowns[key] = os.clock() + waitTime
-		local target = enemyTarget(root, 14)
-		if target then damageEnemy(player, target, attackType == "Heavy" and 35 or 15) end
-	elseif action == "Dash" then
-		local root = getRoot(player.Character)
-		local hum = taggedHumanoid(player.Character)
-		local key = player.UserId .. ":Dash"
-		if root and hum and (not cooldowns[key] or os.clock() >= cooldowns[key]) then
-			cooldowns[key] = os.clock() + 1.25
-			local direction = hum.MoveDirection
-			if direction.Magnitude > 0 then root.AssemblyLinearVelocity = direction.Unit * 75 + Vector3.new(0, 8, 0) end
-		end
-	elseif action == "Movement" then
-		local root = getRoot(player.Character)
-		local hum = taggedHumanoid(player.Character)
-		local key = player.UserId .. ":Movement"
-		if root and hum and (not cooldowns[key] or os.clock() >= cooldowns[key]) then
-			cooldowns[key] = os.clock() + 5
-			local direction = hum.MoveDirection
-			if direction.Magnitude == 0 then direction = root.CFrame.LookVector end
-			root.AssemblyLinearVelocity = direction.Unit * 42 + Vector3.new(0, 52, 0)
-		end
-	elseif action == "Ability" then
-		local ability = profile.learned[payload] and payload
-		if ability then useAbility(player, ability) end
-	elseif action == "Ultimate" then
-		local root = getRoot(player.Character)
-		if not root then return end
-		local key = player.UserId .. ":Ultimate"
-		if cooldowns[key] and os.clock() < cooldowns[key] then return end
-		cooldowns[key] = os.clock() + 25
-		for _, model in ipairs(enemies:GetChildren()) do
-			local targetRoot = getRoot(model)
-			if targetRoot and (targetRoot.Position - root.Position).Magnitude <= 30 then damageEnemy(player, model, 100) end
-		end
-		notify(player, "Ultimate unleashed!")
-	end
-	if action == "Recruit" or action == "Assign" or action == "Absorb" then
-		BaseManager.refreshRosterDisplays(player, profile)
-		actionEvent:FireClient(player, "Refresh")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid and humanoid.Health > 0 then
+		humanoid.WalkSpeed = enabled and 24 or 16
 	end
 end
 
-actionEvent.OnServerEvent:Connect(handleAction)
-
-local function spawnEnemy(position, kind)
-	local model = Instance.new("Model")
-	model.Name = kind or "Wildling"
-	local root = Instance.new("Part")
-	root.Name = "HumanoidRootPart"
-	root.Size = Vector3.new(4, 5, 4)
-	root.Position = position
-	root.Color = Color3.fromRGB(191, 84, 107)
-	root.Material = Enum.Material.Neon
-	root.Anchored = false
-	root.Parent = model
-	local head = Instance.new("Part")
-	head.Name = "Head"
-	head.Size = Vector3.new(3, 3, 3)
-	head.Position = position + Vector3.new(0, 4, 0)
-	head.Color = Color3.fromRGB(255, 151, 124)
-	head.Anchored = false
-	head.Parent = model
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0, weld.Part1 = root, head
-	weld.Parent = root
-	local hum = Instance.new("Humanoid")
-	hum.MaxHealth = Config.EnemyHealth
-	hum.Health = Config.EnemyHealth
-	hum.WalkSpeed = 9
-	hum.Parent = model
-	model.PrimaryPart = root
-	model.Parent = enemies
-	local deadConnection
-	deadConnection = hum.Died:Connect(function()
-		local tag = hum:FindFirstChild("LastHitBy")
-		local killer = tag and tag.Value
-		if killer and killer:IsA("Player") then
-			local killerProfile = profiles[killer]
-			local coinsEarned = Config.KillCoins + (killerProfile and effectsFor(killerProfile).KillCoinBonus or 0)
-			addStat(killer, "Coins", coinsEarned)
-			addStat(killer, "Shards", Config.KillShards)
-			notify(killer, "+" .. coinsEarned .. " coins, +" .. Config.KillShards .. " shard")
-		end
-		task.delay(3, function() if model.Parent then model:Destroy() end end)
-		task.delay(12, function() if #enemies:GetChildren() < 10 then spawnEnemy(position, kind) end end)
-		if deadConnection then deadConnection:Disconnect() end
-	end)
-	task.spawn(function()
-		while model.Parent and hum.Health > 0 do
-			local nearest, nearestDistance
-			for _, player in ipairs(Players:GetPlayers()) do
-				local charRoot = getRoot(player.Character)
-				local p = profiles[player]
-				if charRoot and p and (p.lockUntil or 0) <= os.clock() then
-					local d = (charRoot.Position - root.Position).Magnitude
-					if d < 75 and (not nearestDistance or d < nearestDistance) then nearest, nearestDistance = player.Character, d end
-				end
-			end
-			local targetRoot = getRoot(nearest)
-			if targetRoot and nearestDistance then
-				hum:MoveTo(targetRoot.Position)
-				if nearestDistance < 5 then
-					local targetHum = taggedHumanoid(nearest)
-					if targetHum then targetHum:TakeDamage(7) end
-				end
-			end
-			task.wait(1)
-		end
-	end)
-	return model
-end
-
-local function onCharacter(player, character)
-	local profile = profiles[player]
-	if not profile then return end
-	for _, item in ipairs(character:GetChildren()) do
-		if item:IsA("Tool") then item:Destroy() end
-	end
-	local root = character:WaitForChild("HumanoidRootPart", 10)
-	local hum = character:WaitForChild("Humanoid", 10)
-	local plot = profile.plot and Buildings.Plots[profile.plot]
-	local spawnOffset = profile.plot and profile.plot >= 3 and 8 or 24
-	local spawnPosition = plot and Vector3.new(plot.MinX + 16, 5, plot.MinZ + spawnOffset) or Vector3.new(0, 5, 0)
-	if root then root.CFrame = CFrame.new(spawnPosition) end
-	if hum then
-		profile.sprinting = false
-		hum.WalkSpeed = Config.WalkSpeed
-		actionEvent:FireClient(player, "SprintState", false)
-		hum.Died:Connect(function()
-			local seconds = lockSeconds(profile)
-			profile.lockUntil = os.clock() + seconds
-			notify(player, "Knocked out. You are locked at base for " .. seconds .. " seconds.")
-		end)
-	end
-end
-
-local applySaved
-
-local function findCharacter(name)
-	for _, character in ipairs(Config.Characters) do
-		if character.Name == name then return character end
-	end
-end
-
-local function serializeProfile(player, profile)
-	local roster = {}
-	for _, character in ipairs(profile.roster) do
-		table.insert(roster, {
-			Name = character.Name, Title = character.Title, Ability = character.Ability,
-			Description = character.Description, Rarity = character.Rarity, Income = character.Income, Form = character.Form,
-			Assigned = character.Assigned == true,
-		})
-	end
-	local learned = {}
-	for ability in pairs(profile.learned) do table.insert(learned, ability) end
-	table.sort(learned)
-	local coins, shards = getStat(player, "Coins"), getStat(player, "Shards")
-	return {
-		Version = 1,
-		Coins = coins and coins.Value or 0,
-		Shards = shards and shards.Value or 0,
-		Wood = getStat(player, "Wood").Value,
-		Stone = getStat(player, "Stone").Value,
-		Roster = roster,
-		Learned = learned,
-		Buildings = BaseManager.serialize(profile),
-	}
-end
-
-applySaved = function(player, profile, data)
-	if type(data) ~= "table" then data = {} end
-	local coins, shards = getStat(player, "Coins"), getStat(player, "Shards")
-	if coins and type(data.Coins) == "number" then coins.Value = math.max(0, math.floor(data.Coins)) end
-	if shards and type(data.Shards) == "number" then shards.Value = math.max(0, math.floor(data.Shards)) end
-	for _, resource in ipairs({ "Wood", "Stone" }) do
-		local stat = getStat(player, resource)
-		if stat and type(data[resource]) == "number" then stat.Value = math.clamp(math.floor(data[resource]), 0, 1000000000) end
-	end
-	if type(data.Roster) == "table" then
-		local roster = {}
-		for _, saved in ipairs(data.Roster) do
-			if #roster >= Config.MaxRosterSize then break end
-			local definition = type(saved) == "table" and findCharacter(saved.Name)
-			if type(saved) == "table" and type(saved.Name) == "string" and #saved.Name <= 48 then
-				local character = definition and table.clone(definition) or {}
-				character.Name = saved.Name
-				character.Title = type(saved.Title) == "string" and string.sub(saved.Title, 1, 48) or character.Title or "Generated Being"
-				character.Ability = type(saved.Ability) == "string" and string.sub(saved.Ability, 1, 48) or character.Ability or "Base Pulse"
-				character.Description = type(saved.Description) == "string" and string.sub(saved.Description, 1, 120) or character.Description or "An original generated creature."
-				character.Rarity = ({ Common = true, Uncommon = true, Rare = true, Epic = true, Legendary = true, Mythic = true })[saved.Rarity] and saved.Rarity or character.Rarity or "Common"
-				character.Income = type(saved.Income) == "number" and math.clamp(math.floor(saved.Income), 1, 100) or character.Income or Config.WorkerIncome
-				character.Form = type(saved.Form) == "number" and math.clamp(math.floor(saved.Form), 1, #Config.BeingForms) or character.Form
-				character.Assigned = saved.Assigned == true
-				table.insert(roster, character)
-			end
-		end
-		profile.roster = roster
-	end
-	if type(data.Learned) == "table" then
-		profile.learned = { ["Base Pulse"] = true }
-		for _, ability in ipairs(data.Learned) do
-			if type(ability) == "string" then profile.learned[ability] = true end
-		end
-	end
-	BaseManager.restore(player, profile, data.Buildings)
-	BaseManager.refreshRosterDisplays(player, profile)
-end
-
-local function saveProfile(player)
-	local profile = profiles[player]
-	if not profile or not profile.canSave or profile.saving then return end
-	profile.saving = true
-	PlayerData.save(player, serializeProfile(player, profile))
-	profile.saving = false
-end
+gameAction.OnServerEvent:Connect(function(player, action, value)
+	if action == "Sprint" then setSprint(player, value) end
+end)
 
 local function onPlayer(player)
-	for _, containerName in ipairs({ "Backpack", "StarterGear" }) do
-		local container = player:FindFirstChild(containerName)
-		if container then
-			for _, item in ipairs(container:GetChildren()) do
-				if item:IsA("Tool") then item:Destroy() end
-			end
-		end
-	end
-	ensureStat(player, "Coins", 100)
-	ensureStat(player, "Shards", 0)
-	ensureStat(player, "Wood", 0)
-	ensureStat(player, "Stone", 0)
-	local starterBeing = Config.rollCharacter(random)
-	starterBeing.Assigned = true
-	profiles[player] = {
-		roster = { starterBeing },
-		learned = { ["Base Pulse"] = true },
-		lockUntil = 0,
-		sprinting = false,
-		buildings = { { Id = "StarterHouse", X = 3, Z = 3, Level = 1 } },
-		effects = Buildings.effects({}),
-	}
-	local profile = profiles[player]
-	BaseManager.assignPlot(player, profile)
-	-- Load saved progress in the background; defaults are used until (and unless) it arrives.
-	task.spawn(function()
-		local data, ok = PlayerData.load(player)
-		if profiles[player] ~= profile then return end
-		if ok then
-			applySaved(player, profile, data)
-			profile.canSave = true -- only save if the load succeeded, so defaults never overwrite real data
-		else
-			BaseManager.restore(player, profile, nil)
-			BaseManager.refreshRosterDisplays(player, profile)
-		end
-		enforceWorkerCap(player)
-		actionEvent:FireClient(player, "BaseRefresh")
-	end)
-	player.CharacterAdded:Connect(function(char) onCharacter(player, char) end)
-	if player.Character then task.spawn(onCharacter, player, player.Character) end
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	local coins = Instance.new("IntValue")
+	coins.Name = "Coins"
+	coins.Value = 500
+	coins.Parent = leaderstats
+	inventoryFor(player)
 	task.spawn(function()
 		while player.Parent do
-			local p = profiles[player]
-			if p then
-				local bonuses = effectsFor(p)
-				local income = 0
-				for _, being in ipairs(p.roster) do
-					if being.Assigned then income += (being.Income or Config.WorkerIncome) + bonuses.WorkerIncomeBonus end
-				end
-				income += bonuses.IncomeBonus
-				addStat(player, "Coins", income)
-				if income > 0 then notify(player, "Base income: +" .. income .. " coins") end
-			end
-			task.wait(Config.IncomeInterval)
+			task.wait(8)
+			if player.Parent and coins.Parent then coins.Value += 10 end
 		end
 	end)
-end
 
-WorldBuilder.build(world, Config)
-for _, node in ipairs(world:WaitForChild("GatherNodes"):GetChildren()) do
-	local prompt = node:FindFirstChild("GatherPrompt", true)
-	local resource = node:GetAttribute("Resource")
-	local amount = node:GetAttribute("Amount")
-	if prompt and (resource == "Wood" or resource == "Stone" or resource == "Shards") then
-		local savedParts = {}
-		for _, descendant in ipairs(node:GetDescendants()) do
-			if descendant:IsA("BasePart") then
-				savedParts[descendant] = { Transparency = descendant.Transparency, CanCollide = descendant.CanCollide }
-			end
-		end
-		prompt.Triggered:Connect(function(player)
-			local profile = profiles[player]
-			local root = getRoot(player.Character)
-			if not profile or node:GetAttribute("Available") ~= true or not root then return end
-			if (root.Position - prompt.Parent.Position).Magnitude > prompt.MaxActivationDistance + 2 then return end
-			local stat = getStat(player, resource)
-			if not stat then return end
-			node:SetAttribute("Available", false)
-			prompt.Enabled = false
-			for part in pairs(savedParts) do
-				if part.Parent then part.Transparency = 1; part.CanCollide = false end
-			end
-			stat.Value += amount
-			notify(player, string.format("Gathered %d %s.", amount, resource == "Shards" and "essence" or string.lower(resource)))
-			task.delay(18, function()
-				if not node.Parent then return end
-				node:SetAttribute("Available", true)
-				for part, appearance in pairs(savedParts) do
-					if part.Parent then
-						part.Transparency = appearance.Transparency
-						part.CanCollide = appearance.CanCollide
-					end
-				end
-				prompt.Enabled = true
-			end)
-		end)
-	end
-end
-BaseManager.init({
-	world = world,
-	Config = Config,
-	profiles = profiles,
-	notify = notify,
-	getStat = getStat,
-	refresh = function(player) actionEvent:FireClient(player, "BaseRefresh") end,
-	onChanged = enforceWorkerCap,
-})
-baseStateFunction.OnServerInvoke = function(player)
-	return BaseManager.stateFor(player)
+	player.CharacterAdded:Connect(function(character)
+		local humanoid = character:WaitForChild("Humanoid", 10)
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if humanoid then humanoid.WalkSpeed = 16 end
+		if root then root.CFrame = CFrame.new(0, 5, 82) end
+	end)
 end
 
 Players.PlayerAdded:Connect(onPlayer)
 Players.PlayerRemoving:Connect(function(player)
-	saveProfile(player)
-	BaseManager.releasePlot(player, profiles[player])
-	profiles[player] = nil
-end)
-
--- Autosave every minute, and save everyone when the server shuts down.
-task.spawn(function()
-	while true do
-		task.wait(60)
-		for _, player in ipairs(Players:GetPlayers()) do task.spawn(saveProfile, player) end
-	end
-end)
-game:BindToClose(function()
-	local pending = 0
-	for _, player in ipairs(Players:GetPlayers()) do
-		pending += 1
-		task.spawn(function()
-			saveProfile(player)
-			pending -= 1
-		end)
-	end
-	local deadline = os.clock() + 20
-	while pending > 0 and os.clock() < deadline do task.wait(0.2) end
+	lastSpin[player] = nil
 end)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
 
-for _, position in ipairs(WorldBuilder.EnemySpawns) do
-	spawnEnemy(position, "Wildling")
-end
-
-RunService.Heartbeat:Connect(function()
-	for player, profile in pairs(profiles) do
-		if profile.lockUntil and profile.lockUntil > os.clock() then
-			local root = getRoot(player.Character)
-			if root and (math.abs(root.Position.X) > 55 or math.abs(root.Position.Z) > 55) then
-				local plot = profile.plot and Buildings.Plots[profile.plot]
-				local spawnOffset = profile.plot and profile.plot >= 3 and 8 or 24
-				local home = plot and Vector3.new(plot.MinX + 16, 5, plot.MinZ + spawnOffset) or Vector3.new(0, 5, 0)
-				root.CFrame = CFrame.new(home)
-				root.AssemblyLinearVelocity = Vector3.zero
-			end
-		end
+-- Move each conveyor tile continuously around the rectangular circuit.
+RunService.Heartbeat:Connect(function(deltaTime)
+	for _, segment in ipairs(beltSegments) do
+		local distance = (segment:GetAttribute("TrackDistance") + beltSpeed * deltaTime) % perimeter
+		segment:SetAttribute("TrackDistance", distance)
+		local position, axis = pointOnLoop(distance)
+		segment.Position = position
+		local width = 4
+		segment.Size = axis == "X"
+			and Vector3.new(beltSpacing - 0.35, 0.45, width)
+			or Vector3.new(width, 0.45, beltSpacing - 0.35)
 	end
 end)
+
+print("[StarterBase] Built one large base and its moving conveyor loop.")
