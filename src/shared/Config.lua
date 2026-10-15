@@ -5,6 +5,11 @@ Config.IncomeInterval = 10
 Config.WorkerIncome = 5
 Config.KnockoutLockSeconds = 60
 Config.EnemyHealth = 100
+Config.KillCoins = 12
+Config.KillShards = 1
+Config.BaseWorkerSlots = 2 -- Barracks add more
+Config.MinKnockoutLockSeconds = 10 -- Infirmary can't reduce the lock below this
+Config.SellRefund = 0.5 -- fraction of coins spent that demolishing returns
 
 -- Original placeholder characters. Replace these with your own final designs later.
 Config.Characters = {

@@ -3,7 +3,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Buildings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Buildings"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
+local BaseManager = require(script.Parent:WaitForChild("BaseManager"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 
 local remotes = Instance.new("Folder")
 remotes.Name = "GameRemotes"
@@ -17,6 +20,9 @@ stateFunction.Parent = remotes
 local notifyEvent = Instance.new("RemoteEvent")
 notifyEvent.Name = "Notify"
 notifyEvent.Parent = remotes
+local baseStateFunction = Instance.new("RemoteFunction")
+baseStateFunction.Name = "GetBaseState"
+baseStateFunction.Parent = remotes
 
 local world = Instance.new("Folder")
 world.Name = "DemoWorld"
@@ -59,7 +65,16 @@ local function stateFor(player)
 	local learned = {}
 	for ability in pairs(profile.learned) do table.insert(learned, ability) end
 	table.sort(learned)
-	return { Roster = roster, Learned = learned, LockSeconds = math.max(0, math.ceil((profile.lockUntil or 0) - os.clock())) }
+	local workers = 0
+	for _, character in ipairs(profile.roster) do if character.Assigned then workers += 1 end end
+	local bonusSlots = profile.effects and profile.effects.WorkerSlots or 0
+	return {
+		Roster = roster,
+		Learned = learned,
+		LockSeconds = math.max(0, math.ceil((profile.lockUntil or 0) - os.clock())),
+		Workers = workers,
+		WorkerSlots = Config.BaseWorkerSlots + bonusSlots,
+	}
 end
 
 stateFunction.OnServerInvoke = function(player)
@@ -78,6 +93,43 @@ end
 local function addStat(player, name, amount)
 	local stat = getStat(player, name)
 	if stat then stat.Value += amount end
+end
+
+-- Bonuses from the player's buildings (see Buildings.lua and BaseManager.lua)
+local function effectsFor(profile)
+	return profile.effects or Buildings.effects(profile.buildings or {})
+end
+
+local function countWorkers(profile)
+	local workers = 0
+	for _, character in ipairs(profile.roster) do if character.Assigned then workers += 1 end end
+	return workers
+end
+
+local function workerSlots(profile)
+	return Config.BaseWorkerSlots + effectsFor(profile).WorkerSlots
+end
+
+local function lockSeconds(profile)
+	return math.max(Config.MinKnockoutLockSeconds, Config.KnockoutLockSeconds - effectsFor(profile).LockReduction)
+end
+
+-- Called after buildings change: if slots shrank (e.g. a Barracks was demolished), stand extra workers down.
+local function enforceWorkerCap(player)
+	local profile = profiles[player]
+	if not profile then return end
+	local slots = workerSlots(profile)
+	local workers = 0
+	for _, character in ipairs(profile.roster) do
+		if character.Assigned then
+			workers += 1
+			if workers > slots then
+				character.Assigned = false
+				notify(player, character.Name .. " moved to reserve - not enough worker slots.")
+			end
+		end
+	end
+	actionEvent:FireClient(player, "Refresh")
 end
 
 local function getRoot(character)
@@ -106,6 +158,8 @@ end
 local function damageEnemy(player, model, amount)
 	local hum = taggedHumanoid(model)
 	if not hum or hum.Health <= 0 then return end
+	local profile = profiles[player]
+	if profile then amount = math.max(1, math.floor(amount * (1 + effectsFor(profile).DamageBonus) + 0.5)) end
 	local credit = hum:FindFirstChild("LastHitBy") or Instance.new("ObjectValue")
 	credit.Name = "LastHitBy"
 	credit.Value = player
@@ -141,6 +195,7 @@ end
 local function handleAction(player, action, payload)
 	local profile = profiles[player]
 	if not profile then return end
+	if BaseManager.handleAction(player, action, payload) then return end
 	if action == "Recruit" then
 		local coins = getStat(player, "Coins")
 		if not coins or coins.Value < Config.RecruitCost then notify(player, "Need " .. Config.RecruitCost .. " coins to recruit."); return end
@@ -158,8 +213,12 @@ local function handleAction(player, action, payload)
 		table.insert(profile.roster, newCharacter)
 		notify(player, "Recruited " .. newCharacter.Name .. " — " .. newCharacter.Title .. "!")
 	elseif action == "Assign" then
-		local target = profile.roster[payload]
+		local target = type(payload) == "number" and profile.roster[payload]
 		if not target then return end
+		if not target.Assigned and countWorkers(profile) >= workerSlots(profile) then
+			notify(player, "No free worker slots - build or upgrade a Barracks in the Builder Grounds.")
+			return
+		end
 		target.Assigned = not target.Assigned
 		notify(player, target.Name .. (target.Assigned and " assigned to the base." or " moved to your reserve."))
 	elseif action == "Absorb" then
@@ -254,9 +313,11 @@ local function spawnEnemy(position, kind)
 		local tag = hum:FindFirstChild("LastHitBy")
 		local killer = tag and tag.Value
 		if killer and killer:IsA("Player") then
-			addStat(killer, "Coins", 12)
-			addStat(killer, "Shards", 1)
-			notify(killer, "+12 coins, +1 shard")
+			local killerProfile = profiles[killer]
+			local coinsEarned = Config.KillCoins + (killerProfile and effectsFor(killerProfile).KillCoinBonus or 0)
+			addStat(killer, "Coins", coinsEarned)
+			addStat(killer, "Shards", Config.KillShards)
+			notify(killer, "+" .. coinsEarned .. " coins, +" .. Config.KillShards .. " shard")
 		end
 		task.delay(3, function() if model.Parent then model:Destroy() end end)
 		task.delay(12, function() if #enemies:GetChildren() < 10 then spawnEnemy(position, kind) end end)
@@ -295,10 +356,72 @@ local function onCharacter(player, character)
 	if root then root.CFrame = CFrame.new(0, 5, -12) end
 	if hum then
 		hum.Died:Connect(function()
-			profile.lockUntil = os.clock() + Config.KnockoutLockSeconds
-			notify(player, "Knocked out. You are locked at base for 60 seconds.")
+			local seconds = lockSeconds(profile)
+			profile.lockUntil = os.clock() + seconds
+			notify(player, "Knocked out. You are locked at base for " .. seconds .. " seconds.")
 		end)
 	end
+end
+
+local applySaved
+
+local function findCharacter(name)
+	for _, character in ipairs(Config.Characters) do
+		if character.Name == name then return character end
+	end
+end
+
+local function serializeProfile(player, profile)
+	local roster = {}
+	for _, character in ipairs(profile.roster) do
+		table.insert(roster, { Name = character.Name, Assigned = character.Assigned == true })
+	end
+	local learned = {}
+	for ability in pairs(profile.learned) do table.insert(learned, ability) end
+	table.sort(learned)
+	local coins, shards = getStat(player, "Coins"), getStat(player, "Shards")
+	return {
+		Version = 1,
+		Coins = coins and coins.Value or 0,
+		Shards = shards and shards.Value or 0,
+		Roster = roster,
+		Learned = learned,
+		Buildings = BaseManager.serialize(profile),
+	}
+end
+
+applySaved = function(player, profile, data)
+	if type(data) ~= "table" then return end
+	local coins, shards = getStat(player, "Coins"), getStat(player, "Shards")
+	if coins and type(data.Coins) == "number" then coins.Value = math.max(0, math.floor(data.Coins)) end
+	if shards and type(data.Shards) == "number" then shards.Value = math.max(0, math.floor(data.Shards)) end
+	if type(data.Roster) == "table" then
+		local roster = {}
+		for _, saved in ipairs(data.Roster) do
+			local definition = type(saved) == "table" and findCharacter(saved.Name)
+			if definition then
+				local character = table.clone(definition)
+				character.Assigned = saved.Assigned == true
+				table.insert(roster, character)
+			end
+		end
+		if #roster > 0 then profile.roster = roster end
+	end
+	if type(data.Learned) == "table" then
+		profile.learned = { ["Base Pulse"] = true }
+		for _, ability in ipairs(data.Learned) do
+			if type(ability) == "string" then profile.learned[ability] = true end
+		end
+	end
+	BaseManager.restore(player, profile, data.Buildings)
+end
+
+local function saveProfile(player)
+	local profile = profiles[player]
+	if not profile or not profile.canSave or profile.saving then return end
+	profile.saving = true
+	PlayerData.save(player, serializeProfile(player, profile))
+	profile.saving = false
 end
 
 local function onPlayer(player)
@@ -311,17 +434,31 @@ local function onPlayer(player)
 		},
 		learned = { ["Base Pulse"] = true },
 		lockUntil = 0,
+		buildings = {},
+		effects = Buildings.effects({}),
 	}
+	local profile = profiles[player]
+	BaseManager.assignPlot(player, profile)
+	-- Load saved progress in the background; defaults are used until (and unless) it arrives.
+	task.spawn(function()
+		local data, ok = PlayerData.load(player)
+		if profiles[player] ~= profile then return end
+		if ok then
+			applySaved(player, profile, data)
+			profile.canSave = true -- only save if the load succeeded, so defaults never overwrite real data
+		end
+		enforceWorkerCap(player)
+		actionEvent:FireClient(player, "BaseRefresh")
+	end)
 	player.CharacterAdded:Connect(function(char) onCharacter(player, char) end)
 	if player.Character then task.spawn(onCharacter, player, player.Character) end
 	task.spawn(function()
 		while player.Parent do
 			local p = profiles[player]
 			if p then
-				local workers = 0
-				for _, c in ipairs(p.roster) do if c.Assigned then workers += 1 end end
-				addStat(player, "Coins", workers * Config.WorkerIncome)
-				if workers > 0 then notify(player, "Base income: +" .. (workers * Config.WorkerIncome) .. " coins") end
+				local income = countWorkers(p) * Config.WorkerIncome + effectsFor(p).IncomeBonus
+				addStat(player, "Coins", income)
+				if income > 0 then notify(player, "Base income: +" .. income .. " coins") end
 			end
 			task.wait(Config.IncomeInterval)
 		end
@@ -329,8 +466,45 @@ local function onPlayer(player)
 end
 
 WorldBuilder.build(world, Config)
+BaseManager.init({
+	world = world,
+	Config = Config,
+	profiles = profiles,
+	notify = notify,
+	getStat = getStat,
+	refresh = function(player) actionEvent:FireClient(player, "BaseRefresh") end,
+	onChanged = enforceWorkerCap,
+})
+baseStateFunction.OnServerInvoke = function(player)
+	return BaseManager.stateFor(player)
+end
+
 Players.PlayerAdded:Connect(onPlayer)
-Players.PlayerRemoving:Connect(function(player) profiles[player] = nil end)
+Players.PlayerRemoving:Connect(function(player)
+	saveProfile(player)
+	BaseManager.releasePlot(player, profiles[player])
+	profiles[player] = nil
+end)
+
+-- Autosave every minute, and save everyone when the server shuts down.
+task.spawn(function()
+	while true do
+		task.wait(60)
+		for _, player in ipairs(Players:GetPlayers()) do task.spawn(saveProfile, player) end
+	end
+end)
+game:BindToClose(function()
+	local pending = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		pending += 1
+		task.spawn(function()
+			saveProfile(player)
+			pending -= 1
+		end)
+	end
+	local deadline = os.clock() + 20
+	while pending > 0 and os.clock() < deadline do task.wait(0.2) end
+end)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
 
 for _, position in ipairs(WorldBuilder.EnemySpawns) do

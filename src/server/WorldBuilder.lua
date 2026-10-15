@@ -4,6 +4,7 @@
 --   Home Island   z  -55..55    walled base compound
 --   Region Path   z 54.5..185.5 24 wide, overlaps each neighbour by 0.5 studs
 --   Wilds         z  185..355
+--   Builder Terrace z -110..-54.5 behind the Guild Hall: four build plots (see Buildings.Plots)
 --
 -- Floor rules (these fix the original glitches):
 --   * No two floor parts share an overlapping, coplanar top face (that is z-fighting).
@@ -11,6 +12,9 @@
 --     flicker and no hairline seam.
 --   * Every enemy spawn and decoration is placed over real floor.
 --   * Invisible rails keep players from walking or dashing off the path into the void.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Buildings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Buildings"))
 
 local WorldBuilder = {}
 
@@ -39,6 +43,8 @@ local COLORS = {
 	crystal = Color3.fromRGB(102, 214, 160),
 	banner = Color3.fromRGB(38, 70, 120),
 	lamp = Color3.fromRGB(255, 222, 150),
+	terrace = Color3.fromRGB(62, 110, 82),
+	plot = Color3.fromRGB(86, 140, 100),
 }
 
 -- One accent colour per starter being, used for its station. Unknown names get the fallback.
@@ -55,98 +61,8 @@ local FALLBACK_STATION_COLOR = Color3.fromRGB(150, 160, 175)
 -- Helpers
 -- ---------------------------------------------------------------------------
 
-local function folder(parent, name)
-	local f = Instance.new("Folder")
-	f.Name = name
-	f.Parent = parent
-	return f
-end
-
-local function newPart(parent, name, size, cframe, color, material)
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = size
-	part.CFrame = cframe
-	part.Anchored = true
-	part.Color = color
-	part.Material = material or Enum.Material.SmoothPlastic
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Parent = parent
-	return part
-end
-
--- Axis-aligned box from min/max coordinates (either order). Easier to keep seamless
--- than centre + size, because neighbouring parts can share exact edge values.
-local function box(parent, name, x0, x1, y0, y1, z0, z1, color, material)
-	local size = Vector3.new(math.abs(x1 - x0), math.abs(y1 - y0), math.abs(z1 - z0))
-	local center = Vector3.new((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
-	return newPart(parent, name, size, CFrame.new(center), color, material)
-end
-
-local function ball(parent, name, x, y, z, diameter, color, material)
-	local part = newPart(parent, name, Vector3.new(diameter, diameter, diameter), CFrame.new(x, y, z), color, material or Enum.Material.Neon)
-	part.Shape = Enum.PartType.Ball
-	return part
-end
-
--- Flat round platform with a vertical axis. Its bottom is buried 0.1 studs in the floor.
-local function disc(parent, name, cx, cz, diameter, top, color, material)
-	local bottom = -0.1
-	local height = top - bottom
-	local part = newPart(
-		parent,
-		name,
-		Vector3.new(height, diameter, diameter),
-		CFrame.new(cx, bottom + height / 2, cz) * CFrame.Angles(0, 0, math.rad(90)),
-		color,
-		material
-	)
-	part.Shape = Enum.PartType.Cylinder
-	return part
-end
-
-local function glow(part, color, range, brightness)
-	local light = Instance.new("PointLight")
-	light.Color = color
-	light.Range = range
-	light.Brightness = brightness
-	light.Parent = part
-end
-
-local function label(adornee, title, subtitle, offsetY, color)
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "Label"
-	gui.Adornee = adornee
-	gui.Size = UDim2.fromOffset(300, subtitle and 54 or 30)
-	gui.StudsOffset = Vector3.new(0, offsetY, 0)
-	gui.MaxDistance = 140
-	gui.LightInfluence = 0
-	gui.Parent = adornee
-
-	local top = Instance.new("TextLabel")
-	top.BackgroundTransparency = 1
-	top.Size = UDim2.new(1, 0, 0, 28)
-	top.Font = Enum.Font.GothamBold
-	top.TextSize = 20
-	top.Text = title
-	top.TextColor3 = color or Color3.new(1, 1, 1)
-	top.TextStrokeTransparency = 0.35
-	top.Parent = gui
-
-	if subtitle then
-		local bottom = Instance.new("TextLabel")
-		bottom.BackgroundTransparency = 1
-		bottom.Position = UDim2.fromOffset(0, 28)
-		bottom.Size = UDim2.new(1, 0, 0, 22)
-		bottom.Font = Enum.Font.Gotham
-		bottom.TextSize = 14
-		bottom.Text = subtitle
-		bottom.TextColor3 = Color3.fromRGB(220, 232, 245)
-		bottom.TextStrokeTransparency = 0.45
-		bottom.Parent = gui
-	end
-end
+local Kit = require(script.Parent:WaitForChild("PartKit"))
+local folder, newPart, box, ball, disc, glow, label = Kit.folder, Kit.newPart, Kit.box, Kit.ball, Kit.disc, Kit.glow, Kit.label
 
 local function lamp(parent, x, z)
 	box(parent, "Lamp Post", x - 0.3, x + 0.3, 0, 6, z - 0.3, z + 0.3, COLORS.darkStone, Enum.Material.Metal)
@@ -164,6 +80,8 @@ local function buildFloors(world)
 	-- Path top is 0.2 above its neighbours and it overlaps each by 0.5 studs.
 	box(floor, "Region Path", -12, 12, -3.8, 0.2, 54.5, 185.5, COLORS.path, Enum.Material.Ground)
 	box(floor, "Wilds", -75, 75, -4, 0, 185, 355, COLORS.wilds, Enum.Material.Grass)
+	-- Builder terrace: top 0.2 above the island and overlapping it by 0.5 studs, like the path.
+	box(floor, "Builder Terrace", -60, 60, -3.8, 0.2, -110, -54.5, COLORS.terrace, Enum.Material.Grass)
 	return floor
 end
 
@@ -184,6 +102,12 @@ local function buildRails(world)
 	rail(rails, "Wilds Rail Left", -76, -75, 185, 355)
 	rail(rails, "Wilds Rail Right", 75, 76, 185, 355)
 	rail(rails, "Wilds Rail Back", -76, 76, 355, 356)
+	-- Around the builder terrace (the front corners stop players stepping off beside the island)
+	rail(rails, "Terrace Rail Left", -61, -60, -110, -54.5)
+	rail(rails, "Terrace Rail Right", 60, 61, -110, -54.5)
+	rail(rails, "Terrace Rail Back", -61, 61, -111, -110)
+	rail(rails, "Terrace Front Left", -61, -55, -54.5, -53.5)
+	rail(rails, "Terrace Front Right", 55, 61, -54.5, -53.5)
 end
 
 local function buildCrystals(world, rng)
@@ -224,7 +148,14 @@ local function buildWallsAndGate(base)
 		box(walls, "Side Wall", sx * 52, sx * 54, 0, 8, -49, 47, COLORS.wall, Enum.Material.Brick)
 		box(walls, "Front Wall", sx * 14, sx * 49, 0, 8, 49, 51, COLORS.wall, Enum.Material.Brick)
 	end
-	box(walls, "Back Wall", -49, 49, 0, 8, -54, -52, COLORS.wall, Enum.Material.Brick)
+	-- Back wall has an opening at x = 28..36 leading to the Builder Grounds
+	box(walls, "Back Wall West", -49, 26, 0, 8, -54, -52, COLORS.wall, Enum.Material.Brick)
+	box(walls, "Back Wall East", 38, 49, 0, 8, -54, -52, COLORS.wall, Enum.Material.Brick)
+	local builderGate = folder(base, "Builder Gate")
+	box(builderGate, "Builder Gate Pillar", 26, 28, 0, 12, -54.5, -51.5, COLORS.gate, Enum.Material.Slate)
+	box(builderGate, "Builder Gate Pillar", 36, 38, 0, 12, -54.5, -51.5, COLORS.gate, Enum.Material.Slate)
+	local builderLintel = box(builderGate, "Builder Gate Lintel", 26, 38, 12, 14.5, -54.5, -51.5, COLORS.gate, Enum.Material.Slate)
+	label(builderLintel, "BUILDER GROUNDS", "Claim a plot and build your base (V)", 4, COLORS.violet)
 
 	-- Expedition gate in the front wall (opening is x = -10..10)
 	local gate = folder(base, "Expedition Gate")
@@ -268,7 +199,7 @@ local function buildWalkways(base)
 	walkway("Gate Walkway", -5, 5, 9, 50)
 	walkway("Hall Walkway", -5, 5, -38, -33)
 	walkway("East Connector", 18, 31, -14.5, -9.5)
-	walkway("East Promenade", 31, 36, -46, 38)
+	walkway("East Promenade", 31, 36, -52, 38)
 	walkway("West Connector", -27, -18, -14.5, -9.5)
 	walkway("Altar Connector", -31, -5, 19.5, 24.5)
 
@@ -376,6 +307,42 @@ local function buildBase(world, Config)
 end
 
 -- ---------------------------------------------------------------------------
+-- Builder Grounds: plot pads, borders and claim signs
+-- ---------------------------------------------------------------------------
+
+local function buildPlots(world)
+	local pads = folder(world, "PlotPads")
+	local decor = folder(world, "PlotDecor")
+	local owned = folder(world, "PlayerBuildings") -- BaseManager fills one sub-folder per plot
+	local size = Buildings.PlotCells * Buildings.CellSize
+	for index, plot in ipairs(Buildings.Plots) do
+		local x0, x1, z0, z1 = plot.MinX, plot.MinX + size, plot.MinZ, plot.MinZ + size
+		box(pads, "Plot" .. index .. " Pad", x0, x1, -0.1, 0.3, z0, z1, COLORS.plot, Enum.Material.Grass)
+		folder(owned, "Plot" .. index)
+
+		local d = folder(decor, "Plot" .. index)
+		-- Border strips (they don't overlap each other) and corner posts
+		box(d, "Border", x0, x1, 0.3, 0.38, z0, z0 + 0.5, COLORS.cyan, Enum.Material.Neon)
+		box(d, "Border", x0, x1, 0.3, 0.38, z1 - 0.5, z1, COLORS.cyan, Enum.Material.Neon)
+		box(d, "Border", x0, x0 + 0.5, 0.3, 0.38, z0 + 0.5, z1 - 0.5, COLORS.cyan, Enum.Material.Neon)
+		box(d, "Border", x1 - 0.5, x1, 0.3, 0.38, z0 + 0.5, z1 - 0.5, COLORS.cyan, Enum.Material.Neon)
+		for _, cx in ipairs({ x0, x1 }) do
+			for _, cz in ipairs({ z0, z1 }) do
+				box(d, "Corner Post", cx - 0.6, cx + 0.6, 0.3, 3, cz - 0.6, cz + 0.6, COLORS.darkStone, Enum.Material.Slate)
+			end
+		end
+		-- Claim sign on the front edge (toward the gate)
+		local mid = (x0 + x1) / 2
+		box(d, "Sign Post", mid - 0.3, mid + 0.3, 0, 4, z1 + 1.8, z1 + 2.2, COLORS.darkWood, Enum.Material.Wood)
+		local board = box(d, "Plot Sign", mid - 3.5, mid + 3.5, 4, 6.5, z1 + 1.8, z1 + 2.2, COLORS.darkStone, Enum.Material.Slate)
+		label(board, "PLOT " .. index, "Open - unclaimed", 0, COLORS.cyan)
+	end
+	for _, x in ipairs({ -40, -14, 16, 44 }) do
+		lamp(decor, x, -62)
+	end
+end
+
+-- ---------------------------------------------------------------------------
 -- Self-check
 -- ---------------------------------------------------------------------------
 
@@ -402,8 +369,12 @@ local function validate(world)
 	end
 
 	-- Walk the centre line from the back of the base to the end of the wilds
-	for z = -50, 350, 5 do
+	for z = -105, 350, 5 do
 		check("centre line", 0, z, 0.25)
+	end
+	for index, plot in ipairs(Buildings.Plots) do
+		local size = Buildings.PlotCells * Buildings.CellSize
+		check("plot " .. index .. " centre", plot.MinX + size / 2, plot.MinZ + size / 2, 0.25)
 	end
 	-- Both edges of the path, and the corners of the wilds
 	for z = 56, 184, 8 do
@@ -420,7 +391,7 @@ local function validate(world)
 	end
 
 	if problems == 0 then
-		print("[WorldBuilder] Floor check passed: continuous from base to wilds, all enemy spawns over floor.")
+		print("[WorldBuilder] Floor check passed: continuous from builder grounds to wilds, all enemy spawns over floor.")
 	else
 		warn("[WorldBuilder] Floor check found " .. problems .. " problem(s).")
 	end
@@ -434,6 +405,7 @@ function WorldBuilder.build(world, Config)
 	buildRails(world)
 	buildCrystals(world, rng)
 	buildBase(world, Config)
+	buildPlots(world)
 	validate(world)
 end
 

@@ -46,7 +46,7 @@ local stats = make("TextLabel", {Name="Stats", BackgroundTransparency=1, Positio
 
 local rosterPanel = make("Frame", {Name="BaseRoster", Size=UDim2.fromOffset(370, 340), Position=UDim2.new(0, 16, 0, 102), Visible=false}, gui)
 stylePanel(rosterPanel)
-make("TextLabel", {BackgroundTransparency=1, Position=UDim2.fromOffset(14, 8), Size=UDim2.new(1,-28,0,28), Font=Enum.Font.GothamBold, Text="BASE ROSTER  •  Assign workers or absorb abilities", TextColor3=Color3.fromRGB(170,225,255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
+local rosterHeader = make("TextLabel", {Name="Header", BackgroundTransparency=1, Position=UDim2.fromOffset(14, 8), Size=UDim2.new(1,-28,0,28), Font=Enum.Font.GothamBold, Text="BASE ROSTER  •  Assign workers or absorb abilities", TextColor3=Color3.fromRGB(170,225,255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, rosterPanel)
 button(rosterPanel, "×", UDim2.fromOffset(30, 28), UDim2.new(1,-40,0,7), function() rosterPanel.Visible=false end)
 local list = make("ScrollingFrame", {Name="RosterList", BackgroundTransparency=1, BorderSizePixel=0, Position=UDim2.fromOffset(10, 42), Size=UDim2.new(1,-20,1,-100), CanvasSize=UDim2.new(), AutomaticCanvasSize=Enum.AutomaticSize.Y, ScrollBarThickness=5}, rosterPanel)
 make("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder}, list)
@@ -78,6 +78,7 @@ local function refreshRoster()
 	for _, child in ipairs(list:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
 	local state = stateFunction:InvokeServer()
 	if not state then return end
+	if state.Workers and state.WorkerSlots then rosterHeader.Text = string.format("BASE ROSTER  •  Workers %d/%d  •  Barracks add slots", state.Workers, state.WorkerSlots) end
 	for index, character in ipairs(state.Roster) do
 		local row = make("Frame", {Size=UDim2.new(1,-5,0,94), BackgroundColor3=Color3.fromRGB(37,43,58), LayoutOrder=index}, list)
 		make("UICorner", {CornerRadius=UDim.new(0,7)}, row)
@@ -97,7 +98,7 @@ local function updateStats()
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then return end
 	local coins, shards = leaderstats:FindFirstChild("Coins"), leaderstats:FindFirstChild("Shards")
-	if coins and shards then stats.Text = string.format("Coins: %d     Shards: %d     •     Knockout returns you to base for 60 sec", coins.Value, shards.Value) end
+	if coins and shards then stats.Text = string.format("Coins: %d     Shards: %d     •     Knockout returns you to base", coins.Value, shards.Value) end
 end
 
 local toastToken = 0
@@ -144,7 +145,7 @@ task.spawn(function()
 	end
 end)
 
-local controls = make("TextLabel", {Name="Controls", BackgroundColor3=Color3.fromRGB(24,27,38), BackgroundTransparency=0.18, Position=UDim2.new(1,-258,0,64), Size=UDim2.fromOffset(242,80), Font=Enum.Font.Gotham, Text="Click: basic  |  Right click: heavy\nShift: dash  |  C: movement leap\nQ/E: abilities  |  R: ultimate\nB: base roster", TextColor3=Color3.new(1,1,1), TextSize=12, TextWrapped=true}, gui)
+local controls = make("TextLabel", {Name="Controls", BackgroundColor3=Color3.fromRGB(24,27,38), BackgroundTransparency=0.18, Position=UDim2.new(1,-258,0,64), Size=UDim2.fromOffset(242,96), Font=Enum.Font.Gotham, Text="Click: basic  |  Right click: heavy\nShift: dash  |  C: movement leap\nQ/E: abilities  |  R: ultimate\nB: base roster  |  V: build mode", TextColor3=Color3.new(1,1,1), TextSize=12, TextWrapped=true}, gui)
 make("UICorner", {CornerRadius=UDim.new(0,8)}, controls)
 
 refreshRoster()
