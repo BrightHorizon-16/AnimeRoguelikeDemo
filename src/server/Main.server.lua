@@ -217,8 +217,7 @@ local stock = {
 	{ Name = "Mystery Box", Price = 400 },
 }
 local prizePool = {
-	"Health Potion", "Speed Coil", "Lucky Charm", "Wood Bundle", "Gem Pouch", "Pet Egg",
-	"Iron Sword", "Magic Wand", "Shield", "Grapple Hook", "Rainbow Trail", "Mystery Box",
+	"Capy-gator", "Hootfin", "Giraffrog", "Pengtiger", "Snaxolotl",
 }
 local lastSpin = {}
 

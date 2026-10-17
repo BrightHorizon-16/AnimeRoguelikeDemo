@@ -384,7 +384,7 @@ refreshInventory()
 
 local spinPanel = makePanel("SpinPanel", UDim2.fromOffset(590, 330))
 text(spinPanel, "Title", "LUCKY SPIN", UDim2.new(1, -80, 0, 42), UDim2.fromOffset(22, 16), 25, COLORS.white, Enum.Font.GothamBold)
-text(spinPanel, "SubTitle", "Costs 50 test coins • 12 possible placeholder items", UDim2.new(1, -44, 0, 24), UDim2.fromOffset(22, 56), 14, COLORS.muted)
+text(spinPanel, "SubTitle", "Costs 50 test coins • 5 original animal fusions", UDim2.new(1, -44, 0, 24), UDim2.fromOffset(22, 56), 14, COLORS.muted)
 local spinClose = button(spinPanel, "Close", "×", UDim2.fromOffset(38, 38), UDim2.new(1, -52, 0, 14), COLORS.panel2)
 
 local viewport = Instance.new("Frame")
@@ -423,8 +423,7 @@ layout.Parent = strip
 local spinButton = button(spinPanel, "SpinButton", "SPIN  •  50 COINS", UDim2.fromOffset(230, 48), UDim2.new(0.5, -115, 1, -68), Color3.fromRGB(164, 107, 236))
 local isSpinning = false
 local spinItems = {
-	"Health Potion", "Speed Coil", "Lucky Charm", "Wood Bundle", "Gem Pouch", "Pet Egg",
-	"Iron Sword", "Magic Wand", "Shield", "Grapple Hook", "Rainbow Trail", "Mystery Box",
+	"Capy-gator", "Hootfin", "Giraffrog", "Pengtiger", "Snaxolotl",
 }
 
 local function playSpin(winner)

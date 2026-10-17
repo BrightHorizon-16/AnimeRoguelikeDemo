@@ -3,7 +3,7 @@ GENERATED BEINGS — ROBLOX PROJECT HANDOFF
 
 Project folder: C:\Games\AnimeRoguelikeDemo
 Rojo project: default.project.json
-Status date: 2026-10-16
+Status date: 2026-10-17
 
 CURRENT STATE
 -------------
@@ -12,11 +12,13 @@ no walls, surrounded by an animated rectangular conveyor. The map has bright
 green studded ground, a red approach path, and a spawn plaza.
 
 The screen GUI has a scrollable placeholder Shop, a scrollable Inventory with
-live counts, and a Lucky Spin. Shop goods and 12 spin prizes are text-only
-generic Roblox-style items. A spin costs 50 test coins, shows 15 passing cards,
-and awards a random item selected on the server. Players start with 500 test
-coins and get 10 more every 8 seconds. Hold Left Shift or Right Shift to
-sprint (16 normal / 24 sprint speed). A controls guide stays at bottom-left.
+live counts, and a Lucky Spin. Spin costs 50 test coins, shows 15 passing cards,
+and awards one of five original animal fusions selected on the server. The
+Blender source, lineup render, and five FBX exports are in assets/characters.
+Import the FBX files in Studio and save as Roblox Models before mapping their
+meshes into the live game. Players start with 500 test coins and get 10 more
+every 8 seconds. Hold Left Shift or Right Shift to sprint (16 normal / 24
+sprint speed). A controls guide stays at bottom-left.
 
 The conveyor has a dark belt, rounded corners, and 144 thin animated crosswise
 treads. It travels at 24 studs/second and moves idle players around its loop
@@ -103,6 +105,12 @@ dash movement, and added cooldown, health, and dash visual feedback.
 [Codex | 2026-10-15] During timeout troubleshooting, tried temporary alternate
 Rojo ports and stopped that server; restored the project's documented port
 34873 at the user's direction.
+[Codex | 2026-10-17] Built five original Blender animal-fusion characters
+(Capy-gator, Hootfin, Giraffrog, Pengtiger, Snaxolotl), saved the editable
+scene, a lineup render, five centered FBX exports, and import notes. Replaced
+the spin prize pool with those five characters and kept awarded names/counts
+in the player's inventory. Meshes still need Studio 3D Importer → .rbxm before
+Rojo can include them as live Roblox Model instances.
 
 Every change must be signed by its actual author as Codex or Claude. Never
 attribute one author's work to the other.

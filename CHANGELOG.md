@@ -2,6 +2,19 @@
 
 Every entry must be signed with its author: "Codex" or "Claude". Do not attribute one author's changes to the other.
 
+## 2026-10-17 - Five Blender animal-fusion spin collectibles
+
+Changed
+- Built five original, colored 3D toy characters in Blender: Capy-gator, Hootfin, Giraffrog, Pengtiger, and Snaxolotl.
+- Saved the editable Blender scene, a rendered lineup preview, the Blender build script, and one centered FBX per character under `assets/characters`.
+- Replaced the spin prize pool with these five characters. Winning one adds its name and count to the player's inventory; the reel cycles through the same character set.
+- Added import notes. Roblox Studio must import the FBX files and save them as Roblox Models before Rojo can map the meshes into the live game.
+
+Verification
+- Generated the `.blend`, five FBX exports, and preview with Blender 5.1.2; reviewed the rendered lineup. Not imported or tested in Roblox Studio.
+
+Signed: Codex
+
 ## 2026-10-16 - Conveyor carry and HUD spacing
 
 Changed
